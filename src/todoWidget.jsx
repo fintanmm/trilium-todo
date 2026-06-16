@@ -294,7 +294,7 @@ export default defineWidget({
 
   render() {
     const [tasks, setTasks] = useState([]);
-    const [visible, setVisible] = useState(true);
+    const [visible, setVisible] = useState(() => localStorage.getItem('todotxt-visible') !== 'false');
     const [filter, setFilter] = useState(null);
     const [sortKey, setSortKey] = useState('priority');
     const [searchQuery, setSearchQuery] = useState('');
@@ -311,6 +311,10 @@ export default defineWidget({
     useEffect(() => { editingRef.current = editingIdx; }, [editingIdx]);
     const editRef = useRef(null);
     const searchRef = useRef(null);
+
+    useEffect(() => {
+      localStorage.setItem('todotxt-visible', visible);
+    }, [visible]);
 
     const loadTasks = useCallback(async () => {
       setLoading(true);

@@ -88,3 +88,9 @@
 - Added "Completed" sort option (sorts by completion date, newest first)
 - Escape key clears search then filter (if search is empty), skips when focused in search input or inline edit
 - Added refs for filter/search/editing state to avoid re-registering the keydown listener
+
+## 2026-06-16 — Phase 8: Toggle Persistence
+
+- Widget visibility persisted to `localStorage` key `todotxt-visible`
+- Initial state read from `localStorage.getItem('todotxt-visible') !== 'false'` (defaults to visible)
+- `useEffect` syncs `visible` state to localStorage on every change (toggle button and `Ctrl+Shift+T` both covered)
