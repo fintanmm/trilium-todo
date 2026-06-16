@@ -31,12 +31,12 @@ Get your ETAPI token from Trilium → Options → ETAPI.
 
 Create the following notes in Trilium:
 
-| Note | Type | Labels | Content |
-|---|---|---|---|
-| `TodoTXT Widget` | JS frontend (JSX) | `#widget`, `#run=frontendStartup`, `#codeMime=text/x-trilium-jsx` | `src/todoWidget.jsx` |
-| `todoTxtParser` (child of widget) | JS frontend | `#codeMime=application/javascript;env=frontend` | `src/todoTxtParser.js` |
-| `todoStore` (child of widget) | JS frontend | `#codeMime=application/javascript;env=frontend` | `src/todoStore.js` |
-| `todo.txt` | Text | `#todotxtStore` | (empty, will hold tasks) |
+| Note                              | Type              | Labels                                                            | Content                  |
+| --------------------------------- | ----------------- | ----------------------------------------------------------------- | ------------------------ |
+| `TodoTXT Widget`                  | JS frontend (JSX) | `#widget`, `#run=frontendStartup`, `#codeMime=text/x-trilium-jsx` | `src/todoWidget.jsx`     |
+| `todoTxtParser` (child of widget) | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoTxtParser.js`   |
+| `todoStore` (child of widget)     | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoStore.js`       |
+| `todo.txt`                        | Text              | `#todotxtStore`                                                   | (empty, will hold tasks) |
 
 After creating the notes, reload Trilium.
 
