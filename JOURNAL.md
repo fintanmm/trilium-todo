@@ -10,3 +10,21 @@
 - Created `JOURNAL.md` (this file).
 - Created `README.md` — Plugin description, features, requirements, installation, usage, development, license.
 - Initialized git repository with `.gitignore`.
+
+## 2026-06-16 — Phase 2: Parser Module
+
+- Refined `todoTxtParser.js`:
+  - Fixed `key:value` parsing to only match tokens with exactly one colon (prevents URL false positives)
+  - Added `.filter.byContext()`, `.filter.byProject()`, `.filter.byPriority()`, `.filter.byCompleted()`
+  - Added `.uniqueContexts()`, `.uniqueProjects()` for filter bar aggregation
+  - Added `.sort.byPriority()`, `.sort.byCreationDate()`, `.sort.byCompletionDate()`
+  - Added `.addTask()`, `.toggleComplete()`, `.removeTask()` convenience functions
+  - Properly handles empty input, lines with no metadata, multiple spaces
+- Updated `todoWidget.jsx`:
+  - Uses new parser utilities (toggleComplete, addTask, removeTask)
+  - Added inline edit via double-click
+  - Added delete button per task
+  - Added filter bar with clickable context/project tags
+  - Added sort selector (priority / created date)
+  - Added task counter (incomplete / total)
+  - Shows creation dates on tasks

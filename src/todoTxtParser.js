@@ -1,13 +1,97 @@
 module.exports = {
   parse(content) {
-    const lines = content.split('\n').filter(l => l.trim());
-    return lines.map(line => parseLine(line));
+    return (content || '')
+      .split('\n')
+      .filter(l => l.trim())
+      .map(line => parseLine(line));
   },
 
   serialize(tasks) {
-    return tasks.map(t => serializeTask(t)).join('\n');
+    return tasks
+      .map(t => serializeTask(t))
+      .join('\n');
+  },
+
+  addTask(tasks, text) {
+    const parsed = parseLine(text.trim());
+    return [...tasks, parsed];
+  },
+
+  toggleComplete(task) {
+    const next = { ...task };
+    if (next.completed) {
+      next.completed = false;
+      next.completionDate = null;
+    } else {
+      next.completed = true;
+      next.completionDate = today();
+    }
+    return next;
+  },
+
+  removeTask(tasks, index) {
+    return tasks.filter((_, i) => i !== index);
+  },
+
+  filter: {
+    byContext(tasks, context) {
+      return tasks.filter(t => t.contexts.includes(context));
+    },
+    byProject(tasks, project) {
+      return tasks.filter(t => t.projects.includes(project));
+    },
+    byPriority(tasks, priority) {
+      return tasks.filter(t => t.priority === priority);
+    },
+    byCompleted(tasks, completed = true) {
+      return tasks.filter(t => t.completed === completed);
+    }
+  },
+
+  uniqueContexts(tasks) {
+    const set = new Set();
+    for (const t of tasks) for (const c of t.contexts) set.add(c);
+    return [...set].sort();
+  },
+
+  uniqueProjects(tasks) {
+    const set = new Set();
+    for (const t of tasks) for (const p of t.projects) set.add(p);
+    return [...set].sort();
+  },
+
+  sort: {
+    byPriority(tasks) {
+      return [...tasks].sort((a, b) => {
+        const pa = a.priority ? a.priority.charCodeAt(0) : 99;
+        const pb = b.priority ? b.priority.charCodeAt(0) : 99;
+        return pa - pb;
+      });
+    },
+    byCreationDate(tasks, desc = false) {
+      return [...tasks].sort((a, b) => {
+        if (!a.creationDate) return desc ? -1 : 1;
+        if (!b.creationDate) return desc ? 1 : -1;
+        return desc
+          ? b.creationDate.localeCompare(a.creationDate)
+          : a.creationDate.localeCompare(b.creationDate);
+      });
+    },
+    byCompletionDate(tasks, desc = false) {
+      return [...tasks].sort((a, b) => {
+        if (!a.completionDate) return desc ? -1 : 1;
+        if (!b.completionDate) return desc ? 1 : -1;
+        return desc
+          ? b.completionDate.localeCompare(a.completionDate)
+          : a.completionDate.localeCompare(b.completionDate);
+      });
+    }
   }
 };
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function parseLine(line) {
   const task = {
@@ -37,20 +121,20 @@ function parseLine(line) {
   }
 
   if (task.completed) {
-    const dateMatch = rest.match(/^(\d{4}-\d{2}-\d{2})\s+/);
-    if (dateMatch) {
-      task.completionDate = dateMatch[1];
-      rest = rest.slice(dateMatch[0].length);
+    const d = rest.match(/^(\d{4}-\d{2}-\d{2})\s+/);
+    if (d) {
+      task.completionDate = d[1];
+      rest = rest.slice(d[0].length);
     }
   }
 
-  const dateMatch = rest.match(/^(\d{4}-\d{2}-\d{2})\s+/);
-  if (dateMatch) {
-    task.creationDate = dateMatch[1];
-    rest = rest.slice(dateMatch[0].length);
+  const d = rest.match(/^(\d{4}-\d{2}-\d{2})\s+/);
+  if (d) {
+    task.creationDate = d[1];
+    rest = rest.slice(d[0].length);
   }
 
-  const tokens = rest.split(/\s+/);
+  const tokens = rest.split(/\s+/).filter(Boolean);
   task.description = tokens.filter(t => {
     if (t.startsWith('@')) {
       task.contexts.push(t.slice(1));
@@ -60,10 +144,13 @@ function parseLine(line) {
       task.projects.push(t.slice(1));
       return false;
     }
-    const kv = t.match(/^(\S+):(\S+)$/);
-    if (kv) {
-      task.keyValues[kv[1]] = kv[2];
-      return false;
+    const colons = (t.match(/:/g) || []).length;
+    if (colons === 1) {
+      const [k, v] = t.split(':');
+      if (k && v) {
+        task.keyValues[k] = v;
+        return false;
+      }
     }
     return true;
   }).join(' ');
