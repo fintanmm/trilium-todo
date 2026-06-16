@@ -6,6 +6,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 const https = require("https");
 
 const TRILIUM_URL = process.env.TRILIUM_URL || "http://localhost:7777";
@@ -17,17 +18,29 @@ if (!TRILIUM_TOKEN) {
   process.exit(1);
 }
 
-const { hostname, port, protocol } = new URL(TRILIUM_URL);
+let parsedUrl;
+try {
+  parsedUrl = new URL(TRILIUM_URL);
+} catch (e) {
+  console.error(`ERROR: Invalid TRILIUM_URL "${TRILIUM_URL}": ${e.message}`);
+  process.exit(1);
+}
+
+const { hostname, port, protocol } = parsedUrl;
+const effectivePort = port || (protocol === "https:" ? 443 : 80);
+
+console.log(`Target: ${protocol}//${hostname}${port ? ":" + port : ""}/etapi/`);
 
 async function api(method, endpoint, body) {
   const start = Date.now();
   const data = body ? JSON.stringify(body) : null;
   console.log(`  → ${method} /etapi/${endpoint}`);
   return new Promise((resolve, reject) => {
-    const req = (protocol === "https:" ? https : require("http")).request(
+    const mod = protocol === "https:" ? https : http;
+    const req = mod.request(
       {
         hostname,
-        port,
+        port: effectivePort,
         path: `/etapi/${endpoint}`,
         method,
         headers: {
@@ -42,17 +55,25 @@ async function api(method, endpoint, body) {
         res.on("end", () => {
           const elapsed = Date.now() - start;
           const text = Buffer.concat(chunks).toString();
-          console.log(`  ← ${res.statusCode} (${elapsed}ms)`);
-          if (res.statusCode >= 200 && res.statusCode < 300) {
+          const status = res.statusCode;
+          console.log(`  ← ${status} (${elapsed}ms)`);
+          if (status >= 200 && status < 300) {
             resolve(text ? JSON.parse(text) : null);
+          } else if (status >= 300 && status < 400 && res.headers.location) {
+            console.log(`     → redirect to ${res.headers.location}`);
+            reject(new Error(`Unexpected redirect to ${res.headers.location} — check TRILIUM_URL`));
           } else {
-            reject(new Error(`ETAPI /etapi/${endpoint} → ${res.statusCode}: ${text}`));
+            reject(new Error(`/etapi/${endpoint} → ${status}: ${text.slice(0, 500)}`));
           }
         });
       },
     );
     req.on("error", (e) => {
-      console.error(`  ✗ ${e.message}`);
+      if (e.message.includes("Parse Error") && protocol === "http:") {
+        console.error(`  ✗ Protocol mismatch — server may expect HTTPS. Try setting TRILIUM_URL to https://${hostname}${port ? ":" + port : ""}`);
+      } else {
+        console.error(`  ✗ ${e.message}`);
+      }
       reject(e);
     });
     if (data) req.write(data);
