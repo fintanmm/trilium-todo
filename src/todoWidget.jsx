@@ -1,4 +1,9 @@
-import { defineWidget, RightPanelWidget, useState, useEffect, useCallback, useRef } from "trilium:preact";
+const { defineWidget, useState, useEffect } = require("trilium:preact");
+
+function useRef(initial) {
+  const [r] = useState({ current: initial });
+  return r;
+}
 
 const styles = `
 .todotxt-widget {
@@ -11,6 +16,35 @@ const styles = `
   outline: 2px solid var(--active-item-background-color);
   outline-offset: -2px;
   border-radius: 4px;
+}
+
+.todotxt-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--main-border-color);
+  margin-bottom: 6px;
+}
+
+.todotxt-header strong {
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted-text-color);
+}
+
+.todotxt-header button {
+  background: none;
+  border: none;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.todotxt-header button:hover {
+  background: var(--accented-background-color);
+  color: var(--main-text-color);
 }
 
 .todotxt-add input {
@@ -257,58 +291,48 @@ const styles = `
 .todotxt-footer select:focus {
   border-color: var(--active-item-background-color);
 }
-
-.todotxt-hide {
-  background: none;
-  border: none;
-  color: var(--muted-text-color);
-  cursor: pointer;
-  padding: 0 4px;
-  font-size: 1em;
-  border-radius: 3px;
-  margin-left: 4px;
-}
-.todotxt-hide:hover {
-  color: var(--main-text-color);
-}
 `;
 
 function sortDisplayed(tasks, sortKey, filter, searchQuery) {
   let result = [...tasks];
 
   if (filter) {
-    if (filter.type === 'context') {
+    if (filter.type === "context") {
       result = todoTxtParser.filter.byContext(result, filter.value);
-    } else if (filter.type === 'project') {
+    } else if (filter.type === "project") {
       result = todoTxtParser.filter.byProject(result, filter.value);
-    } else if (filter.type === 'priority') {
+    } else if (filter.type === "priority") {
       result = todoTxtParser.filter.byPriority(result, filter.value);
     }
   }
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    result = result.filter(t => t.description.toLowerCase().includes(q));
+    result = result.filter((t) => t.description.toLowerCase().includes(q));
   }
 
   result = todoTxtParser.sort.byCompleted(result, false);
-  if (sortKey === 'priority') result = todoTxtParser.sort.byPriority(result);
-  else if (sortKey === 'created') result = todoTxtParser.sort.byCreationDate(result, true);
-  else if (sortKey === 'completed') result = todoTxtParser.sort.byCompletionDate(result, true);
+  if (sortKey === "priority") result = todoTxtParser.sort.byPriority(result);
+  else if (sortKey === "created")
+    result = todoTxtParser.sort.byCreationDate(result, true);
+  else if (sortKey === "completed")
+    result = todoTxtParser.sort.byCompletionDate(result, true);
 
   return result;
 }
 
-export default defineWidget({
+module.exports = defineWidget({
   parent: "right-pane",
   position: 100,
 
   render() {
     const [tasks, setTasks] = useState([]);
-    const [visible, setVisible] = useState(() => localStorage.getItem('todotxt-visible') !== 'false');
+    const [visible, setVisible] = useState(
+      () => localStorage.getItem("todotxt-visible") !== "false",
+    );
     const [filter, setFilter] = useState(null);
-    const [sortKey, setSortKey] = useState('priority');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [sortKey, setSortKey] = useState("priority");
+    const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [editingIdx, setEditingIdx] = useState(null);
@@ -317,44 +341,66 @@ export default defineWidget({
     const filterRef = useRef(filter);
     const searchRefState = useRef(searchQuery);
     const editingRef = useRef(editingIdx);
-    useEffect(() => { tasksRef.current = tasks; }, [tasks]);
-    useEffect(() => { filterRef.current = filter; }, [filter]);
-    useEffect(() => { searchRefState.current = searchQuery; }, [searchQuery]);
-    useEffect(() => { editingRef.current = editingIdx; }, [editingIdx]);
+    useEffect(() => {
+      tasksRef.current = tasks;
+    }, [tasks]);
+    useEffect(() => {
+      filterRef.current = filter;
+    }, [filter]);
+    useEffect(() => {
+      searchRefState.current = searchQuery;
+    }, [searchQuery]);
+    useEffect(() => {
+      editingRef.current = editingIdx;
+    }, [editingIdx]);
     const editRef = useRef(null);
     const searchRef = useRef(null);
 
     useEffect(() => {
-      localStorage.setItem('todotxt-visible', visible);
+      localStorage.setItem("todotxt-visible", visible);
     }, [visible]);
 
-    const loadTasks = useCallback(async () => {
+    const loadTasks = async () => {
       setLoading(true);
       setLoadError(null);
       try {
         const content = await todoStore.load();
         setTasks(todoTxtParser.parse(content));
       } catch (e) {
-        console.error('Failed to load tasks:', e);
-        setLoadError('Failed to load tasks.');
+        console.error("Failed to load tasks:", e);
+        setLoadError("Failed to load tasks.");
       }
       setLoading(false);
-    }, []);
+    };
 
     useEffect(() => {
       loadTasks();
-      api.registerKeyboardShortcut('Ctrl+Shift+T', 'todotxt-toggle', () => setVisible(v => !v));
       const unsub = todoStore.onChange(() => {
         if (visible) loadTasks();
       });
       function onKeyDown(e) {
-        if (e.key === 'Escape' && editingRef.current === null && !e.target.closest('.todotxt-search') && !e.target.closest('.todotxt-edit-input')) {
-          if (searchRefState.current) { setSearchQuery(''); searchRef.current?.focus(); }
-          else if (filterRef.current) setFilter(null);
+        if (e.ctrlKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+          e.preventDefault();
+          setVisible((v) => !v);
+          return;
+        }
+        if (
+          e.key === "Escape" &&
+          editingRef.current === null &&
+          !e.target.closest(".todotxt-search") &&
+          !e.target.closest(".todotxt-edit-input")
+        ) {
+          if (searchRefState.current) {
+            setSearchQuery("");
+            searchRef.current?.focus();
+          } else if (filterRef.current) setFilter(null);
         }
       }
-      window.addEventListener('keydown', onKeyDown);
-      return () => { unsub(); window.removeEventListener('keydown', onKeyDown); };
+      window.addEventListener("keydown", onKeyDown);
+      return () => {
+        unsub();
+        window.removeEventListener("keydown", onKeyDown);
+      };
     }, [visible]);
 
     useEffect(() => {
@@ -364,9 +410,9 @@ export default defineWidget({
       }
     }, [editingIdx]);
 
-    const saveTasks = useCallback((updater) => {
-      if (typeof updater === 'function') {
-        setTasks(prev => {
+    const saveTasks = (updater) => {
+      if (typeof updater === "function") {
+        setTasks((prev) => {
           const next = updater(prev);
           todoStore.saveDebounced(todoTxtParser.serialize(next));
           return next;
@@ -375,7 +421,7 @@ export default defineWidget({
         setTasks(updater);
         todoStore.saveDebounced(todoTxtParser.serialize(updater));
       }
-    }, []);
+    };
 
     function findRealIdx(task) {
       return tasksRef.current.indexOf(task);
@@ -386,9 +432,11 @@ export default defineWidget({
       if (idx === -1) return;
       setEditingIdx(null);
       if (!newDesc.trim()) return;
-      saveTasks(prev => {
+      saveTasks((prev) => {
         const next = [...prev];
-        next[idx] = todoTxtParser.updateTask(next[idx], { description: newDesc.trim() });
+        next[idx] = todoTxtParser.updateTask(next[idx], {
+          description: newDesc.trim(),
+        });
         return next;
       });
     }
@@ -397,76 +445,164 @@ export default defineWidget({
       return (
         <div>
           <style>{styles}</style>
-          <div class="todotxt-widget" style="padding: 8px; cursor: pointer;" onClick={() => {
-            setVisible(true);
-            loadTasks();
-          }}>
-            <button class="bx bx-list-check" aria-label="Show todo.txt" title="Show todo.txt"></button>
+          <div
+            class="todotxt-widget"
+            style="padding: 8px; cursor: pointer;"
+            onClick={() => {
+              setVisible(true);
+              loadTasks();
+            }}
+          >
+            <button
+              class="bx bx-list-check"
+              aria-label="Show todo.txt"
+              title="Show todo.txt"
+            ></button>
           </div>
         </div>
       );
     }
 
     const displayed = sortDisplayed(tasks, sortKey, filter, searchQuery);
-    const hasFilter = filter !== null || searchQuery !== '';
+    const hasFilter = filter !== null || searchQuery !== "";
     const allContexts = todoTxtParser.uniqueContexts(tasks);
     const allProjects = todoTxtParser.uniqueProjects(tasks);
-    const prios = ['A','B','C','D','E'].filter(p => tasks.some(t => t.priority === p));
+    const prios = ["A", "B", "C", "D", "E"].filter((p) =>
+      tasks.some((t) => t.priority === p),
+    );
     const filteredCount = displayed.length;
 
     return (
-      <RightPanelWidget id="todotxt" title="todo.txt">
+      <div>
         <style>{styles}</style>
         <div class="todotxt-widget" tabIndex={-1}>
+          <div class="todotxt-header">
+            <strong>todo.txt</strong>
+            <button
+              class="bx bx-hide"
+              onClick={() => setVisible(false)}
+              aria-label="Hide"
+              title="Hide"
+              style="margin-left: auto;"
+            ></button>
+          </div>
+
           <div class="todotxt-add">
-            <input type="text" placeholder="+ Add task…"
+            <input
+              type="text"
+              placeholder="+ Add task…"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.target.value.trim()) {
-                  const next = todoTxtParser.addTask(tasksRef.current, e.target.value);
+                if (e.key === "Enter" && e.target.value.trim()) {
+                  const next = todoTxtParser.addTask(
+                    tasksRef.current,
+                    e.target.value,
+                  );
                   saveTasks(next);
-                  e.target.value = '';
+                  e.target.value = "";
                 }
               }}
             />
           </div>
 
           <div class="todotxt-search">
-            <input ref={searchRef} type="text" placeholder="Search…" value={searchQuery}
-              onInput={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setSearchQuery(''); e.target.blur(); } }}
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search…"
+              value={searchQuery}
+              onInput={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setSearchQuery("");
+                  e.target.blur();
+                }
+              }}
             />
           </div>
 
-          {(allContexts.length > 0 || allProjects.length > 0 || prios.length > 0) && (
+          {(allContexts.length > 0 ||
+            allProjects.length > 0 ||
+            prios.length > 0) && (
             <div class="todotxt-filters">
-              {allContexts.map(c => (
-                <button class={filter?.value === c && filter?.type === 'context' ? 'active' : ''}
-                  onClick={() => setFilter(filter?.value === c && filter?.type === 'context' ? null : { type: 'context', value: c })}>
+              {allContexts.map((c) => (
+                <button
+                  class={
+                    filter?.value === c && filter?.type === "context"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setFilter(
+                      filter?.value === c && filter?.type === "context"
+                        ? null
+                        : { type: "context", value: c },
+                    )
+                  }
+                >
                   @{c}
                 </button>
               ))}
-              {allProjects.map(p => (
-                <button class={filter?.value === p && filter?.type === 'project' ? 'active' : ''}
-                  onClick={() => setFilter(filter?.value === p && filter?.type === 'project' ? null : { type: 'project', value: p })}>
+              {allProjects.map((p) => (
+                <button
+                  class={
+                    filter?.value === p && filter?.type === "project"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setFilter(
+                      filter?.value === p && filter?.type === "project"
+                        ? null
+                        : { type: "project", value: p },
+                    )
+                  }
+                >
                   +{p}
                 </button>
               ))}
-              {prios.map(p => (
-                <button class={filter?.value === p && filter?.type === 'priority' ? 'active' : ''}
-                  onClick={() => setFilter(filter?.value === p && filter?.type === 'priority' ? null : { type: 'priority', value: p })}>
+              {prios.map((p) => (
+                <button
+                  class={
+                    filter?.value === p && filter?.type === "priority"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setFilter(
+                      filter?.value === p && filter?.type === "priority"
+                        ? null
+                        : { type: "priority", value: p },
+                    )
+                  }
+                >
                   {p}
                 </button>
               ))}
-              {hasFilter && <button class="todotxt-clear" onClick={() => { setFilter(null); setSearchQuery(''); }}>✕</button>}
+              {hasFilter && (
+                <button
+                  class="todotxt-clear"
+                  onClick={() => {
+                    setFilter(null);
+                    setSearchQuery("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           )}
 
           <div class="todotxt-body">
             {loading && <p class="todotxt-empty">Loading…</p>}
-            {loadError && <p class="todotxt-empty" style="color:#e74c3c">{loadError}</p>}
+            {loadError && (
+              <p class="todotxt-empty" style="color:#e74c3c">
+                {loadError}
+              </p>
+            )}
             {!loading && !loadError && displayed.length === 0 && (
               <p class="todotxt-empty">
-                {hasFilter ? 'No matching tasks.' : 'No tasks yet.'}
+                {hasFilter ? "No matching tasks." : "No tasks yet."}
               </p>
             )}
             {displayed.map((task, i) => {
@@ -474,12 +610,17 @@ export default defineWidget({
               const isEditing = editingIdx === realIdx;
 
               return (
-                <div class={{ 'todotxt-task': true, 'completed': task.completed }} key={realIdx}>
-                  <input type="checkbox" checked={task.completed}
+                <div
+                  class={{ "todotxt-task": true, completed: task.completed }}
+                  key={realIdx}
+                >
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
                     onClick={() => {
                       const idx = findRealIdx(task);
                       if (idx === -1) return;
-                      saveTasks(prev => {
+                      saveTasks((prev) => {
                         const next = [...prev];
                         next[idx] = todoTxtParser.toggleComplete(next[idx]);
                         return next;
@@ -487,40 +628,65 @@ export default defineWidget({
                     }}
                   />
                   {task.priority && !task.completed && (
-                    <span class="todotxt-prio" data-prio={task.priority}>{task.priority}</span>
+                    <span class="todotxt-prio" data-prio={task.priority}>
+                      {task.priority}
+                    </span>
                   )}
 
                   {isEditing ? (
-                    <input class="todotxt-edit-input" ref={editRef}
+                    <input
+                      class="todotxt-edit-input"
+                      ref={editRef}
                       defaultValue={task.description}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitEdit(task, e.target.value);
-                        else if (e.key === 'Escape') setEditingIdx(null);
+                        if (e.key === "Enter") commitEdit(task, e.target.value);
+                        else if (e.key === "Escape") setEditingIdx(null);
                       }}
                       onBlur={(e) => commitEdit(task, e.target.value)}
                     />
                   ) : (
-                    <span class={task.completed ? 'todotxt-done' : 'todotxt-desc'}
-                      onDblClick={() => setEditingIdx(realIdx)}>
+                    <span
+                      class={task.completed ? "todotxt-done" : "todotxt-desc"}
+                      onDblClick={() => setEditingIdx(realIdx)}
+                    >
                       {task.description}
                     </span>
                   )}
 
-                  {task.contexts.map(c => (
-                    <span class="todotxt-ctx" onClick={() => setFilter({ type: 'context', value: c })}>@{c}</span>
+                  {task.contexts.map((c) => (
+                    <span
+                      class="todotxt-ctx"
+                      onClick={() => setFilter({ type: "context", value: c })}
+                    >
+                      @{c}
+                    </span>
                   ))}
-                  {task.projects.map(p => (
-                    <span class="todotxt-proj" onClick={() => setFilter({ type: 'project', value: p })}>+{p}</span>
+                  {task.projects.map((p) => (
+                    <span
+                      class="todotxt-proj"
+                      onClick={() => setFilter({ type: "project", value: p })}
+                    >
+                      +{p}
+                    </span>
                   ))}
-                  {Object.entries(task.keyValues).filter(([k]) => k !== 'pri').map(([k, v]) => (
-                    <span class={{ 'todotxt-kv': true, [k]: true }}>{k}:{v}</span>
-                  ))}
-                  {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
-                  <button class="bx bx-x todotxt-del" aria-label="Delete task" title="Delete"
+                  {Object.entries(task.keyValues)
+                    .filter(([k]) => k !== "pri")
+                    .map(([k, v]) => (
+                      <span class={{ "todotxt-kv": true, [k]: true }}>
+                        {k}:{v}
+                      </span>
+                    ))}
+                  {task.creationDate && (
+                    <span class="todotxt-date">{task.creationDate}</span>
+                  )}
+                  <button
+                    class="bx bx-x todotxt-del"
+                    aria-label="Delete task"
+                    title="Delete"
                     onClick={() => {
                       const idx = findRealIdx(task);
                       if (idx === -1) return;
-                      saveTasks(prev => todoTxtParser.removeTask(prev, idx));
+                      saveTasks((prev) => todoTxtParser.removeTask(prev, idx));
                     }}
                   />
                 </div>
@@ -529,17 +695,25 @@ export default defineWidget({
           </div>
 
           <div class="todotxt-footer">
-            <span>{tasks.filter(t => !t.completed).length} / {tasks.length}{hasFilter && <span style="margin-left:4px;color:var(--primary-button-background-color)">({filteredCount})</span>}
-              <button class="bx bx-hide todotxt-hide" onClick={() => setVisible(false)} aria-label="Hide todo.txt" title="Hide"></button>
+            <span>
+              {tasks.filter((t) => !t.completed).length} / {tasks.length}
+              {hasFilter && (
+                <span style="margin-left:4px;color:var(--primary-button-background-color)">
+                  ({filteredCount})
+                </span>
+              )}
             </span>
-            <select value={sortKey} onChange={e => setSortKey(e.target.value)}>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value)}
+            >
               <option value="priority">Priority</option>
               <option value="created">Created</option>
               <option value="completed">Completed</option>
             </select>
           </div>
         </div>
-      </RightPanelWidget>
+      </div>
     );
-  }
+  },
 });
