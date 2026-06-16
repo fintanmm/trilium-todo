@@ -103,3 +103,12 @@
 - Added `word-break: break-word` and `max-width: 200px` on `.todotxt-kv` and `.todotxt-date` to prevent long values from overflowing
 - Added `e.preventDefault()` on search Escape handler to prevent unwanted browser defaults
 - Added subtle transition on inline edit input focus state
+
+## 2026-06-16 — install.js: Fix for Trilium v0.102.2 ETAPI
+
+- Replaced broken `GET /etapi/notes/{id}/children` (404 in v0.102.2) with `GET /etapi/notes/{id}` → `childNoteIds` + per-child fetches
+- Added `findChildByTitle(parentId, title)` helper for cross-version child lookups
+- Added `resolveFolderChain(parts)` to walk/create nested folder paths under root
+- Changed parent from root-level "Trilium todo.txt" to Root → Trilium → Trilium todo.txt
+- Removed `PUT /etapi/notes/{id}/labels` calls (endpoint doesn't exist; labels set via `attributes` on creation only)
+- Changed default port from 7777 to 37840 to match this Trilium instance

@@ -1,6 +1,6 @@
 // Trilium todo.txt Plugin — ETAPI Installer
 // Usage:
-//   export TRILIUM_URL=http://localhost:8080
+//   export TRILIUM_URL=http://localhost:37840
 //   export TRILIUM_TOKEN=your-etapi-token
 //   node install.js
 
@@ -9,7 +9,7 @@ const path = require("path");
 const http = require("http");
 const https = require("https");
 
-const TRILIUM_URL = process.env.TRILIUM_URL || "http://localhost:7777";
+const TRILIUM_URL = process.env.TRILIUM_URL || "http://localhost:37840";
 const TRILIUM_TOKEN = process.env.TRILIUM_TOKEN;
 
 if (!TRILIUM_TOKEN) {
@@ -85,27 +85,51 @@ function readSource(name) {
   return fs.readFileSync(path.join(__dirname, "src", name), "utf-8");
 }
 
+async function getNote(noteId) {
+  return api("GET", `notes/${noteId}`);
+}
+
+// Walk parent's childNoteIds and return the first child matching title, or null.
+async function findChildByTitle(parentId, title) {
+  const parent = await getNote(parentId);
+  if (!parent.childNoteIds || parent.childNoteIds.length === 0) return null;
+  for (const childId of parent.childNoteIds) {
+    const child = await getNote(childId);
+    if (child.title === title) return child;
+  }
+  return null;
+}
+
+// Resolve a chain like ["Trilium", "Trilium todo.txt"] under root, creating
+// missing folders along the way. Returns the final note.
+async function resolveFolderChain(parts) {
+  let parentId = "root";
+  for (const part of parts) {
+    let note = await findChildByTitle(parentId, part);
+    if (!note) {
+      const result = await api("POST", "notes", {
+        parentNoteId: parentId,
+        title: part,
+        type: "text",
+        content: "",
+      });
+      note = result.note;
+      console.log(`  → Created "${part}" (${note.noteId})`);
+    } else {
+      console.log(`  → Found "${part}" (${note.noteId})`);
+    }
+    parentId = note.noteId;
+  }
+  return await getNote(parentId);
+}
+
 async function run() {
   const startTotal = Date.now();
   console.log("── Trilium todo.txt Installer ──\n");
 
-  // Find or create plugin parent folder
+  // Resolve Root → Trilium → Trilium todo.txt
   console.log("[1/4] Resolving parent note…");
-  let parents = await api("GET", `notes/root/children`);
-  let parent = parents.results.find((n) => n.title === "Trilium todo.txt");
-
-  if (!parent) {
-    parent = await api("POST", "notes", {
-      parentNoteId: "root",
-      title: "Trilium todo.txt",
-      type: "text",
-      content: "",
-    });
-    parent = parent.note;
-    console.log(`  → Created parent note "${parent.title}" (${parent.noteId})`);
-  } else {
-    console.log(`  → Found parent note "${parent.title}" (${parent.noteId})`);
-  }
+  const parent = await resolveFolderChain(["Trilium", "Trilium todo.txt"]);
 
   const spec = [
     {
@@ -141,20 +165,15 @@ async function run() {
 
   console.log("\n[2/4] Installing bundle notes…");
   for (const s of spec) {
-    let children = await api("GET", `notes/${parent.noteId}/children`);
-    let existing = children.results.find((n) => n.title === s.title);
+    const existing = await findChildByTitle(parent.noteId, s.title);
 
     if (existing) {
-      console.log(`  ~ "${s.title}" (${existing.noteId}) — updating`);
+      console.log(`  ~ "${s.title}" (${existing.noteId}) — updating content`);
       await api("PUT", `notes/${existing.noteId}/content`, {
         content: s.content,
       });
-      for (const l of s.labels) {
-        await api("PUT", `notes/${existing.noteId}/labels`, {
-          name: l.name,
-          value: l.value || "",
-        });
-      }
+      // Labels are set once on creation via the attributes payload below;
+      // re-install only overwrites content.
     } else {
       console.log(`  + "${s.title}" — creating`);
       const result = await api("POST", "notes", {
@@ -175,8 +194,8 @@ async function run() {
 
   // Check for backing todo.txt note
   console.log("\n[3/4] Checking backing note (#todotxtStore)…");
-  let search = await api("GET", "notes?search=%23todotxtStore");
-  let storeNote = search.results && search.results[0];
+  const search = await api("GET", "notes?search=%23todotxtStore");
+  const storeNote = search.results && search.results[0];
   if (!storeNote) {
     console.log("  + Creating backing note…");
     const result = await api("POST", "notes", {
