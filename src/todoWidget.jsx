@@ -1,9 +1,5 @@
-const { defineWidget, useState, useEffect } = require("trilium:preact");
-
-function useRef(initial) {
-  const [r] = useState({ current: initial });
-  return r;
-}
+const preact = require("trilium:preact");
+const { defineWidget, useState, useEffect, useRef } = preact;
 
 const styles = `
 .todotxt-widget {
