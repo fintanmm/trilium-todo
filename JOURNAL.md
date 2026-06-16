@@ -94,3 +94,12 @@
 - Widget visibility persisted to `localStorage` key `todotxt-visible`
 - Initial state read from `localStorage.getItem('todotxt-visible') !== 'false'` (defaults to visible)
 - `useEffect` syncs `visible` state to localStorage on every change (toggle button and `Ctrl+Shift+T` both covered)
+
+## 2026-06-16 — Phase 9: Polish & Edge-case Hardening
+
+- Added `loadError` state with try/catch in `loadTasks` so backend failures don't silently break the widget; error shown in red inline
+- Added `aria-label` attributes on icon-only buttons (Show, Hide, Delete) for screen reader accessibility
+- Added `:focus-visible` outlines on widget container, filter pills, context/project tags, delete button, and inputs for keyboard navigation
+- Added `word-break: break-word` and `max-width: 200px` on `.todotxt-kv` and `.todotxt-date` to prevent long values from overflowing
+- Added `e.preventDefault()` on search Escape handler to prevent unwanted browser defaults
+- Added subtle transition on inline edit input focus state

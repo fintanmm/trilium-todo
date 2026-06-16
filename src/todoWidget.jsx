@@ -7,6 +7,11 @@ const styles = `
   padding: 8px;
   user-select: none;
 }
+.todotxt-widget:focus-visible {
+  outline: 2px solid var(--active-item-background-color);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
 
 .todotxt-header {
   display: flex;
@@ -51,6 +56,10 @@ const styles = `
 .todotxt-add input:focus {
   border-color: var(--active-item-background-color);
 }
+.todotxt-add input:focus-visible {
+  outline: 1px solid var(--active-item-background-color);
+  outline-offset: 1px;
+}
 .todotxt-add input::placeholder {
   color: var(--muted-text-color);
 }
@@ -69,6 +78,10 @@ const styles = `
 }
 .todotxt-search input:focus {
   border-color: var(--active-item-background-color);
+}
+.todotxt-search input:focus-visible {
+  outline: 1px solid var(--active-item-background-color);
+  outline-offset: 1px;
 }
 .todotxt-search input::placeholder {
   color: var(--muted-text-color);
@@ -89,6 +102,10 @@ const styles = `
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s;
+}
+.todotxt-filters button:focus-visible {
+  outline: 2px solid var(--active-item-background-color);
+  outline-offset: 2px;
 }
 .todotxt-filters button:hover {
   color: var(--main-text-color);
@@ -193,6 +210,7 @@ const styles = `
   cursor: pointer;
 }
 .todotxt-ctx:hover { text-decoration: underline; }
+.todotxt-ctx:focus-visible { outline: 1px dotted var(--active-item-background-color); }
 
 .todotxt-proj {
   color: #2ecc71;
@@ -201,11 +219,13 @@ const styles = `
   cursor: pointer;
 }
 .todotxt-proj:hover { text-decoration: underline; }
+.todotxt-proj:focus-visible { outline: 1px dotted var(--active-item-background-color); }
 
 .todotxt-date {
   color: var(--muted-text-color);
   font-size: 0.78em;
   flex-shrink: 0;
+  word-break: break-word;
 }
 
 .todotxt-kv {
@@ -215,6 +235,8 @@ const styles = `
   background: var(--accented-background-color);
   padding: 0 4px;
   border-radius: 3px;
+  word-break: break-word;
+  max-width: 200px;
 }
 .todotxt-kv.due { color: #e74c3c; }
 
@@ -228,6 +250,10 @@ const styles = `
   opacity: 0;
   transition: opacity 0.12s;
   flex-shrink: 0;
+}
+.todotxt-del:focus-visible {
+  opacity: 0.8;
+  outline: 1px solid var(--active-item-background-color);
 }
 .todotxt-task:hover .todotxt-del {
   opacity: 0.6;
@@ -299,6 +325,7 @@ export default defineWidget({
     const [sortKey, setSortKey] = useState('priority');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(null);
     const [editingIdx, setEditingIdx] = useState(null);
 
     const tasksRef = useRef(tasks);
@@ -318,8 +345,14 @@ export default defineWidget({
 
     const loadTasks = useCallback(async () => {
       setLoading(true);
-      const content = await todoStore.load();
-      setTasks(todoTxtParser.parse(content));
+      setLoadError(null);
+      try {
+        const content = await todoStore.load();
+        setTasks(todoTxtParser.parse(content));
+      } catch (e) {
+        console.error('Failed to load tasks:', e);
+        setLoadError('Failed to load tasks.');
+      }
       setLoading(false);
     }, []);
 
@@ -383,7 +416,7 @@ export default defineWidget({
             setVisible(true);
             loadTasks();
           }}>
-            <button class="bx bx-list-check" title="Show todo.txt"></button>
+            <button class="bx bx-list-check" aria-label="Show todo.txt" title="Show todo.txt"></button>
           </div>
         </div>
       );
@@ -402,7 +435,7 @@ export default defineWidget({
         <div class="todotxt-widget" tabIndex={-1}>
           <div class="todotxt-header">
             <strong>todo.txt</strong>
-            <button class="bx bx-hide" onClick={() => setVisible(false)} title="Hide" style="margin-left: auto;"></button>
+            <button class="bx bx-hide" onClick={() => setVisible(false)} aria-label="Hide" title="Hide" style="margin-left: auto;"></button>
           </div>
 
           <div class="todotxt-add">
@@ -420,7 +453,7 @@ export default defineWidget({
           <div class="todotxt-search">
             <input ref={searchRef} type="text" placeholder="Search…" value={searchQuery}
               onInput={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Escape') { setSearchQuery(''); e.target.blur(); } }}
+              onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); setSearchQuery(''); e.target.blur(); } }}
             />
           </div>
 
@@ -450,7 +483,8 @@ export default defineWidget({
 
           <div class="todotxt-body">
             {loading && <p class="todotxt-empty">Loading…</p>}
-            {!loading && displayed.length === 0 && (
+            {loadError && <p class="todotxt-empty" style="color:#e74c3c">{loadError}</p>}
+            {!loading && !loadError && displayed.length === 0 && (
               <p class="todotxt-empty">
                 {hasFilter ? 'No matching tasks.' : 'No tasks yet.'}
               </p>
@@ -502,7 +536,7 @@ export default defineWidget({
                     <span class={{ 'todotxt-kv': true, [k]: true }}>{k}:{v}</span>
                   ))}
                   {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
-                  <button class="bx bx-x todotxt-del" title="Delete"
+                  <button class="bx bx-x todotxt-del" aria-label="Delete task" title="Delete"
                     onClick={() => {
                       const idx = findRealIdx(task);
                       if (idx === -1) return;
