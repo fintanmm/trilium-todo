@@ -5,104 +5,112 @@ const styles = `
 .todotxt-widget {
   font-size: var(--main-font-size);
   color: var(--main-text-color);
-  padding: 8px;
+  padding: 12px;
   user-select: none;
 }
 .todotxt-widget:focus-visible {
   outline: 2px solid var(--active-item-background-color);
   outline-offset: -2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
+/* ── Header ── */
 .todotxt-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--main-border-color);
-  margin-bottom: 6px;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--main-border-color);
+  margin-bottom: 10px;
 }
-
 .todotxt-header strong {
-  font-size: 0.9em;
+  font-size: 0.82em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   color: var(--muted-text-color);
+  opacity: 0.85;
 }
-
 .todotxt-header button {
   background: none;
   border: none;
   color: var(--muted-text-color);
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
 }
 .todotxt-header button:hover {
   background: var(--accented-background-color);
   color: var(--main-text-color);
 }
 
+/* ── Add task input ── */
+.todotxt-add {
+  margin-bottom: 6px;
+}
 .todotxt-add input {
   width: 100%;
   box-sizing: border-box;
   background: var(--input-background-color);
   color: var(--input-text-color);
-  border: 1px solid var(--main-border-color);
-  border-radius: 4px;
-  padding: 5px 8px;
+  border: 1.5px solid var(--main-border-color);
+  border-radius: 6px;
+  padding: 7px 10px;
   font-size: 0.85em;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .todotxt-add input:focus {
   border-color: var(--active-item-background-color);
-}
-.todotxt-add input:focus-visible {
-  outline: 1px solid var(--active-item-background-color);
-  outline-offset: 1px;
+  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.15);
 }
 .todotxt-add input::placeholder {
   color: var(--muted-text-color);
+  opacity: 0.7;
 }
 
+/* ── Search input ── */
+.todotxt-search {
+  margin-bottom: 6px;
+}
 .todotxt-search input {
   width: 100%;
   box-sizing: border-box;
   background: var(--input-background-color);
   color: var(--input-text-color);
-  border: 1px solid var(--main-border-color);
-  border-radius: 4px;
-  padding: 4px 8px;
+  border: 1.5px solid var(--main-border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
   font-size: 0.82em;
   outline: none;
-  margin-bottom: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .todotxt-search input:focus {
   border-color: var(--active-item-background-color);
-}
-.todotxt-search input:focus-visible {
-  outline: 1px solid var(--active-item-background-color);
-  outline-offset: 1px;
+  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.15);
 }
 .todotxt-search input::placeholder {
   color: var(--muted-text-color);
+  opacity: 0.7;
 }
 
+/* ── Filter pills ── */
 .todotxt-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 4px 0 6px;
+  padding: 2px 0 8px;
 }
 .todotxt-filters button {
   background: var(--accented-background-color);
   border: 1px solid transparent;
   color: var(--muted-text-color);
-  font-size: 0.78em;
-  padding: 2px 7px;
-  border-radius: 10px;
+  font-size: 0.75em;
+  padding: 3px 9px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.15s;
+  font-weight: 500;
 }
 .todotxt-filters button:focus-visible {
   outline: 2px solid var(--active-item-background-color);
@@ -111,76 +119,111 @@ const styles = `
 .todotxt-filters button:hover {
   color: var(--main-text-color);
   border-color: var(--main-border-color);
+  transform: translateY(-1px);
 }
 .todotxt-filters button.active {
   background: var(--primary-button-background-color);
   color: var(--primary-button-text-color);
   border-color: var(--primary-button-border-color);
+  font-weight: 600;
 }
 .todotxt-filters .todotxt-clear {
   background: none;
   color: var(--muted-text-color);
-  font-size: 0.8em;
-  padding: 2px 5px;
+  font-size: 0.78em;
+  padding: 3px 7px;
+  opacity: 0.6;
+}
+.todotxt-filters .todotxt-clear:hover {
+  opacity: 1;
+  transform: none;
 }
 
+/* ── Task list body ── */
 .todotxt-body {
   max-height: 50vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--main-border-color) transparent;
+}
+.todotxt-body::-webkit-scrollbar {
+  width: 5px;
+}
+.todotxt-body::-webkit-scrollbar-thumb {
+  background: var(--main-border-color);
+  border-radius: 3px;
 }
 
+/* ── Empty state ── */
 .todotxt-empty {
   color: var(--muted-text-color);
-  font-size: 0.85em;
+  font-size: 0.82em;
   text-align: center;
-  padding: 16px 0;
+  padding: 20px 0;
+  opacity: 0.7;
+  line-height: 1.6;
 }
 
+/* ── Task row ── */
 .todotxt-task {
   display: flex;
   align-items: flex-start;
-  gap: 5px;
-  padding: 4px 4px 4px 2px;
-  border-radius: 4px;
-  transition: background 0.12s;
+  gap: 7px;
+  padding: 7px 8px 7px 6px;
+  border-radius: 6px;
+  transition: background 0.15s, opacity 0.2s;
   font-size: 0.85em;
   line-height: 1.5;
+  border-left: 3px solid transparent;
+  margin-bottom: 2px;
 }
 .todotxt-task:hover {
   background: var(--hover-item-background-color);
+  border-left-color: var(--main-border-color);
 }
 .todotxt-task.completed {
-  opacity: 0.7;
+  opacity: 0.6;
+  border-left-color: transparent !important;
 }
 
+/* ── Checkbox ── */
 .todotxt-task input[type="checkbox"] {
   margin-top: 3px;
   flex-shrink: 0;
   cursor: pointer;
   accent-color: var(--primary-button-background-color);
+  width: 15px;
+  height: 15px;
 }
 
+/* ── Priority badge ── */
 .todotxt-prio {
-  font-weight: bold;
-  font-size: 0.78em;
+  font-weight: 700;
+  font-size: 0.7em;
   flex-shrink: 0;
-  min-width: 16px;
+  min-width: 20px;
   text-align: center;
-  padding: 1px 0;
-  border-radius: 3px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #fff;
+  letter-spacing: 0.3px;
 }
-.todotxt-prio[data-prio="A"] { color: #e74c3c; }
-.todotxt-prio[data-prio="B"] { color: #e67e22; }
-.todotxt-prio[data-prio="C"] { color: #f1c40f; }
+.todotxt-prio[data-prio="A"] { background: #c0392b; }
+.todotxt-prio[data-prio="B"] { background: #d35400; }
+.todotxt-prio[data-prio="C"] { background: #f39c12; color: #222; }
+.todotxt-prio[data-prio="D"] { background: #7f8c8d; }
+.todotxt-prio[data-prio="E"] { background: #95a5a6; }
 
+/* ── Task description ── */
 .todotxt-desc {
   flex: 1;
   min-width: 0;
   word-break: break-word;
   cursor: default;
+  padding: 1px 0;
 }
 .todotxt-desc:hover {
-  text-decoration: underline dotted var(--muted-text-color);
+  color: var(--main-text-color);
 }
 
 .todotxt-done {
@@ -189,103 +232,175 @@ const styles = `
   word-break: break-word;
   text-decoration: line-through;
   color: var(--muted-text-color);
+  font-style: italic;
 }
 
+/* ── Inline edit ── */
 .todotxt-edit-input {
   flex: 1;
   min-width: 0;
   background: var(--input-background-color);
   color: var(--input-text-color);
-  border: 1px solid var(--active-item-background-color);
-  border-radius: 3px;
-  padding: 1px 4px;
+  border: 1.5px solid var(--active-item-background-color);
+  border-radius: 4px;
+  padding: 2px 6px;
   font-size: 0.85em;
   font-family: inherit;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.12);
 }
 
+/* ── Context tag ── */
 .todotxt-ctx {
-  color: #3498db;
-  font-size: 0.85em;
+  color: #5dade2;
+  font-size: 0.78em;
   flex-shrink: 0;
   cursor: pointer;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: background 0.12s;
 }
-.todotxt-ctx:hover { text-decoration: underline; }
-.todotxt-ctx:focus-visible { outline: 1px dotted var(--active-item-background-color); }
+.todotxt-ctx:hover {
+  background: rgba(93, 173, 226, 0.12);
+  text-decoration: none;
+}
 
+/* ── Project tag ── */
 .todotxt-proj {
-  color: #2ecc71;
-  font-size: 0.85em;
+  color: #58d68d;
+  font-size: 0.78em;
   flex-shrink: 0;
   cursor: pointer;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: background 0.12s;
 }
-.todotxt-proj:hover { text-decoration: underline; }
-.todotxt-proj:focus-visible { outline: 1px dotted var(--active-item-background-color); }
+.todotxt-proj:hover {
+  background: rgba(88, 214, 141, 0.12);
+  text-decoration: none;
+}
 
+/* ── Date ── */
 .todotxt-date {
   color: var(--muted-text-color);
-  font-size: 0.78em;
+  font-size: 0.75em;
   flex-shrink: 0;
   word-break: break-word;
+  opacity: 0.8;
+  padding: 1px 0;
 }
 
+/* ── Key-value metadata ── */
 .todotxt-kv {
   color: var(--muted-text-color);
-  font-size: 0.78em;
+  font-size: 0.75em;
   flex-shrink: 0;
   background: var(--accented-background-color);
-  padding: 0 4px;
-  border-radius: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
   word-break: break-word;
   max-width: 200px;
+  font-family: monospace;
+  line-height: 1.6;
 }
-.todotxt-kv.due { color: #e74c3c; }
+.todotxt-kv.due {
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.1);
+  font-weight: 600;
+}
 
+/* ── Delete button ── */
 .todotxt-del {
   background: none;
   border: none;
   color: var(--muted-text-color);
   cursor: pointer;
-  padding: 0 2px;
-  font-size: 1em;
+  padding: 1px 4px;
+  font-size: 1.1em;
   opacity: 0;
-  transition: opacity 0.12s;
+  transition: opacity 0.15s, color 0.15s, transform 0.15s;
   flex-shrink: 0;
+  border-radius: 4px;
+  line-height: 1;
 }
 .todotxt-del:focus-visible {
   opacity: 0.8;
   outline: 1px solid var(--active-item-background-color);
 }
 .todotxt-task:hover .todotxt-del {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 .todotxt-task .todotxt-del:hover {
   opacity: 1;
   color: #e74c3c;
+  transform: scale(1.15);
 }
 
+/* ── Footer ── */
 .todotxt-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 6px;
+  padding-top: 8px;
   border-top: 1px solid var(--main-border-color);
-  margin-top: 6px;
-  font-size: 0.78em;
+  margin-top: 8px;
+  font-size: 0.76em;
   color: var(--muted-text-color);
 }
-
 .todotxt-footer select {
   background: var(--input-background-color);
   color: var(--input-text-color);
   border: 1px solid var(--main-border-color);
-  border-radius: 3px;
-  padding: 2px 4px;
-  font-size: 0.85em;
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 0.82em;
   outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
 .todotxt-footer select:focus {
   border-color: var(--active-item-background-color);
+}
+
+/* ── Collapsed state ── */
+.todotxt-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px !important;
+  cursor: pointer;
+  border: 1.5px dashed var(--main-border-color);
+  border-radius: 8px;
+  transition: all 0.2s;
+  opacity: 0.65;
+  margin: 4px;
+}
+.todotxt-collapsed:hover {
+  opacity: 1;
+  border-color: var(--active-item-background-color);
+  background: var(--hover-item-background-color);
+}
+.todotxt-collapsed button {
+  background: var(--accented-background-color);
+  border: none;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 1.1em;
+  transition: all 0.15s;
+}
+.todotxt-collapsed:hover button {
+  color: var(--main-text-color);
+  background: var(--primary-button-background-color);
+  color: var(--primary-button-text-color);
+}
+.todotxt-collapsed-label {
+  font-size: 0.78em;
+  color: var(--muted-text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 `;
 
@@ -442,11 +557,18 @@ module.exports = defineWidget({
         <div>
           <style>{styles}</style>
           <div
-            class="todotxt-widget"
-            style="padding: 8px; cursor: pointer;"
+            class="todotxt-widget todotxt-collapsed"
             onClick={() => {
               setVisible(true);
               loadTasks();
+            }}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setVisible(true);
+                loadTasks();
+              }
             }}
           >
             <button
@@ -454,6 +576,7 @@ module.exports = defineWidget({
               aria-label="Show todo.txt"
               title="Show todo.txt"
             ></button>
+            <span class="todotxt-collapsed-label">Show todo.txt</span>
           </div>
         </div>
       );
