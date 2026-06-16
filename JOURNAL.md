@@ -66,3 +66,13 @@
 - Clicking context/project tags in task rows now sets the filter (not just in filter bar)
 - Added `.completed` opacity reduction on completed task rows
 - Extracted `sortDisplayed()` helper for cleaner render logic
+
+## 2026-06-16 — Phase 6: Mutations
+
+- Replaced `prompt()` dialog with proper inline input field for editing — double-click to edit, Enter/blur to commit, Escape to cancel; auto-focuses + selects text on open
+- `addTask` now auto-sets today's creation date if none was specified in the input
+- `toggleComplete` preserves priority as `pri:A` key:value on completion; restores it from `pri:` on un-complete
+- Added `updateTask(task, fields)` utility for partial task updates
+- `pri:` key:value hidden from display (round-trip preservation only)
+- All mutation handlers use `tasksRef.current.indexOf(task)` for reliable index lookup across filtered/sorted lists
+- `saveTasks` consistently uses updater function pattern for correct batching

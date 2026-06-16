@@ -14,19 +14,34 @@ module.exports = {
 
   addTask(tasks, text) {
     const parsed = parseLine(text.trim());
+    if (!parsed.creationDate) {
+      parsed.creationDate = today();
+    }
     return [...tasks, parsed];
   },
 
   toggleComplete(task) {
-    const next = { ...task };
+    const next = { ...task, keyValues: { ...task.keyValues } };
     if (next.completed) {
       next.completed = false;
       next.completionDate = null;
+      if (next.keyValues['pri']) {
+        next.priority = next.keyValues['pri'];
+        delete next.keyValues['pri'];
+      }
     } else {
       next.completed = true;
       next.completionDate = today();
+      if (next.priority) {
+        next.keyValues['pri'] = next.priority;
+        next.priority = null;
+      }
     }
     return next;
+  },
+
+  updateTask(task, fields) {
+    return { ...task, ...fields };
   },
 
   removeTask(tasks, index) {

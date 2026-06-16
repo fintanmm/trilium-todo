@@ -154,6 +154,19 @@ const styles = `
   color: var(--muted-text-color);
 }
 
+.todotxt-edit-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--input-background-color);
+  color: var(--input-text-color);
+  border: 1px solid var(--active-item-background-color);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.85em;
+  font-family: inherit;
+  outline: none;
+}
+
 .todotxt-ctx {
   color: #3498db;
   font-size: 0.85em;
@@ -228,21 +241,6 @@ const styles = `
 .todotxt-footer select:focus {
   border-color: var(--active-item-background-color);
 }
-
-.todotxt-section {
-  font-size: 0.75em;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted-text-color);
-  padding: 8px 2px 2px;
-  border-top: 1px solid var(--main-border-color);
-  margin-top: 4px;
-}
-.todotxt-section:first-of-type {
-  border-top: none;
-  margin-top: 0;
-  padding-top: 0;
-}
 `;
 
 function sortDisplayed(tasks, sortKey, filter) {
@@ -273,9 +271,11 @@ export default defineWidget({
     const [filter, setFilter] = useState(null);
     const [sortKey, setSortKey] = useState('priority');
     const [loading, setLoading] = useState(true);
+    const [editingIdx, setEditingIdx] = useState(null);
 
     const tasksRef = useRef(tasks);
     useEffect(() => { tasksRef.current = tasks; }, [tasks]);
+    const editRef = useRef(null);
 
     const loadTasks = useCallback(async () => {
       setLoading(true);
@@ -293,6 +293,13 @@ export default defineWidget({
       return unsub;
     }, [visible]);
 
+    useEffect(() => {
+      if (editingIdx !== null && editRef.current) {
+        editRef.current.focus();
+        editRef.current.select();
+      }
+    }, [editingIdx]);
+
     const saveTasks = useCallback((updater) => {
       if (typeof updater === 'function') {
         setTasks(prev => {
@@ -305,6 +312,22 @@ export default defineWidget({
         todoStore.saveDebounced(todoTxtParser.serialize(updater));
       }
     }, []);
+
+    function findRealIdx(task) {
+      return tasksRef.current.indexOf(task);
+    }
+
+    function commitEdit(task, newDesc) {
+      const idx = findRealIdx(task);
+      if (idx === -1) return;
+      setEditingIdx(null);
+      if (!newDesc.trim()) return;
+      saveTasks(prev => {
+        const next = [...prev];
+        next[idx] = todoTxtParser.updateTask(next[idx], { description: newDesc.trim() });
+        return next;
+      });
+    }
 
     if (!visible) {
       return (
@@ -371,56 +394,63 @@ export default defineWidget({
                 {hasFilter ? 'No matching tasks.' : 'No tasks yet.'}
               </p>
             )}
-            {displayed.map((task, i) => (
-              <div class={{ 'todotxt-task': true, 'completed': task.completed }} key={i}>
-                <input type="checkbox" checked={task.completed}
-                  onClick={() => {
-                    const idx = tasksRef.current.indexOf(task);
-                    if (idx === -1) return;
-                    saveTasks(prev => {
-                      const next = [...prev];
-                      next[idx] = todoTxtParser.toggleComplete(task);
-                      return next;
-                    });
-                  }}
-                />
-                {task.priority && !task.completed && (
-                  <span class="todotxt-prio" data-prio={task.priority}>{task.priority}</span>
-                )}
-                <span class={task.completed ? 'todotxt-done' : 'todotxt-desc'}
-                  onDblClick={() => {
-                    const newDesc = prompt('Edit task:', task.description);
-                    if (newDesc !== null && newDesc.trim()) {
-                      const idx = tasksRef.current.indexOf(task);
+            {displayed.map((task, i) => {
+              const realIdx = findRealIdx(task);
+              const isEditing = editingIdx === realIdx;
+
+              return (
+                <div class={{ 'todotxt-task': true, 'completed': task.completed }} key={realIdx}>
+                  <input type="checkbox" checked={task.completed}
+                    onClick={() => {
+                      const idx = findRealIdx(task);
                       if (idx === -1) return;
                       saveTasks(prev => {
                         const next = [...prev];
-                        next[idx] = { ...next[idx], description: newDesc.trim() };
+                        next[idx] = todoTxtParser.toggleComplete(next[idx]);
                         return next;
                       });
-                    }
-                  }}>
-                  {task.description}
-                </span>
-                {task.contexts.map(c => (
-                  <span class="todotxt-ctx" onClick={() => setFilter({ type: 'context', value: c })}>@{c}</span>
-                ))}
-                {task.projects.map(p => (
-                  <span class="todotxt-proj" onClick={() => setFilter({ type: 'project', value: p })}>+{p}</span>
-                ))}
-                {Object.entries(task.keyValues).map(([k, v]) => (
-                  <span class={{ 'todotxt-kv': true, [k]: true }}>{k}:{v}</span>
-                ))}
-                {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
-                <button class="bx bx-x todotxt-del" title="Delete"
-                  onClick={() => {
-                    const idx = tasksRef.current.indexOf(task);
-                    if (idx === -1) return;
-                    saveTasks(prev => todoTxtParser.removeTask(prev, idx));
-                  }}
-                />
-              </div>
-            ))}
+                    }}
+                  />
+                  {task.priority && !task.completed && (
+                    <span class="todotxt-prio" data-prio={task.priority}>{task.priority}</span>
+                  )}
+
+                  {isEditing ? (
+                    <input class="todotxt-edit-input" ref={editRef}
+                      defaultValue={task.description}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitEdit(task, e.target.value);
+                        else if (e.key === 'Escape') setEditingIdx(null);
+                      }}
+                      onBlur={(e) => commitEdit(task, e.target.value)}
+                    />
+                  ) : (
+                    <span class={task.completed ? 'todotxt-done' : 'todotxt-desc'}
+                      onDblClick={() => setEditingIdx(realIdx)}>
+                      {task.description}
+                    </span>
+                  )}
+
+                  {task.contexts.map(c => (
+                    <span class="todotxt-ctx" onClick={() => setFilter({ type: 'context', value: c })}>@{c}</span>
+                  ))}
+                  {task.projects.map(p => (
+                    <span class="todotxt-proj" onClick={() => setFilter({ type: 'project', value: p })}>+{p}</span>
+                  ))}
+                  {Object.entries(task.keyValues).filter(([k]) => k !== 'pri').map(([k, v]) => (
+                    <span class={{ 'todotxt-kv': true, [k]: true }}>{k}:{v}</span>
+                  ))}
+                  {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
+                  <button class="bx bx-x todotxt-del" title="Delete"
+                    onClick={() => {
+                      const idx = findRealIdx(task);
+                      if (idx === -1) return;
+                      saveTasks(prev => todoTxtParser.removeTask(prev, idx));
+                    }}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           <div class="todotxt-footer">
