@@ -55,3 +55,14 @@
 - Hover effects on task rows (background highlight, delete button fade-in)
 - Focus states on input and select fields
 - Transitions on interactive elements (hover, filter pills, button fade)
+
+## 2026-06-16 — Phase 5: Task List
+
+- Fixed stale closure bug: all mutation handlers now read latest tasks via `useRef` or use functional updater `setTasks(prev => ...)`, preventing lost updates on rapid clicks
+- Refactored `saveTasks` to accept either a direct value or an updater function for correct batching
+- Completed tasks always sort to bottom (via `sort.byCompleted`) regardless of primary sort key
+- Differentiated empty states: "No tasks yet." (fresh list) vs "No matching tasks." (filter with no results)
+- Displayed `key:value` metadata (e.g. `due:2024-01-01`) as small tags — `due:` colored red, others muted
+- Clicking context/project tags in task rows now sets the filter (not just in filter bar)
+- Added `.completed` opacity reduction on completed task rows
+- Extracted `sortDisplayed()` helper for cleaner render logic

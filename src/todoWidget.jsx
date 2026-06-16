@@ -1,4 +1,4 @@
-import { defineWidget, useState, useEffect, useCallback } from "trilium:preact";
+import { defineWidget, useState, useEffect, useCallback, useRef } from "trilium:preact";
 
 const styles = `
 .todotxt-widget {
@@ -112,6 +112,9 @@ const styles = `
 .todotxt-task:hover {
   background: var(--hover-item-background-color);
 }
+.todotxt-task.completed {
+  opacity: 0.7;
+}
 
 .todotxt-task input[type="checkbox"] {
   margin-top: 3px;
@@ -173,6 +176,16 @@ const styles = `
   flex-shrink: 0;
 }
 
+.todotxt-kv {
+  color: var(--muted-text-color);
+  font-size: 0.78em;
+  flex-shrink: 0;
+  background: var(--accented-background-color);
+  padding: 0 4px;
+  border-radius: 3px;
+}
+.todotxt-kv.due { color: #e74c3c; }
+
 .todotxt-del {
   background: none;
   border: none;
@@ -215,7 +228,40 @@ const styles = `
 .todotxt-footer select:focus {
   border-color: var(--active-item-background-color);
 }
+
+.todotxt-section {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted-text-color);
+  padding: 8px 2px 2px;
+  border-top: 1px solid var(--main-border-color);
+  margin-top: 4px;
+}
+.todotxt-section:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
 `;
+
+function sortDisplayed(tasks, sortKey, filter) {
+  let result = [...tasks];
+
+  if (filter) {
+    if (filter.type === 'context') {
+      result = todoTxtParser.filter.byContext(result, filter.value);
+    } else if (filter.type === 'project') {
+      result = todoTxtParser.filter.byProject(result, filter.value);
+    }
+  }
+
+  result = todoTxtParser.sort.byCompleted(result, false);
+  if (sortKey === 'priority') result = todoTxtParser.sort.byPriority(result);
+  else if (sortKey === 'created') result = todoTxtParser.sort.byCreationDate(result, true);
+
+  return result;
+}
 
 export default defineWidget({
   parent: "right-pane",
@@ -227,6 +273,9 @@ export default defineWidget({
     const [filter, setFilter] = useState(null);
     const [sortKey, setSortKey] = useState('priority');
     const [loading, setLoading] = useState(true);
+
+    const tasksRef = useRef(tasks);
+    useEffect(() => { tasksRef.current = tasks; }, [tasks]);
 
     const loadTasks = useCallback(async () => {
       setLoading(true);
@@ -244,9 +293,17 @@ export default defineWidget({
       return unsub;
     }, [visible]);
 
-    const saveTasks = useCallback((newTasks) => {
-      setTasks(newTasks);
-      todoStore.saveDebounced(todoTxtParser.serialize(newTasks));
+    const saveTasks = useCallback((updater) => {
+      if (typeof updater === 'function') {
+        setTasks(prev => {
+          const next = updater(prev);
+          todoStore.saveDebounced(todoTxtParser.serialize(next));
+          return next;
+        });
+      } else {
+        setTasks(updater);
+        todoStore.saveDebounced(todoTxtParser.serialize(updater));
+      }
     }, []);
 
     if (!visible) {
@@ -263,17 +320,8 @@ export default defineWidget({
       );
     }
 
-    let displayed = [...tasks];
-    if (filter) {
-      if (filter.type === 'context') {
-        displayed = todoTxtParser.filter.byContext(displayed, filter.value);
-      } else if (filter.type === 'project') {
-        displayed = todoTxtParser.filter.byProject(displayed, filter.value);
-      }
-    }
-    if (sortKey === 'priority') displayed = todoTxtParser.sort.byPriority(displayed);
-    else if (sortKey === 'created') displayed = todoTxtParser.sort.byCreationDate(displayed, true);
-
+    const displayed = sortDisplayed(tasks, sortKey, filter);
+    const hasFilter = filter !== null;
     const allContexts = todoTxtParser.uniqueContexts(tasks);
     const allProjects = todoTxtParser.uniqueProjects(tasks);
 
@@ -290,7 +338,7 @@ export default defineWidget({
             <input type="text" placeholder="+ Add task…"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
-                  const next = todoTxtParser.addTask(tasks, e.target.value);
+                  const next = todoTxtParser.addTask(tasksRef.current, e.target.value);
                   saveTasks(next);
                   e.target.value = '';
                 }
@@ -318,15 +366,22 @@ export default defineWidget({
 
           <div class="todotxt-body">
             {loading && <p class="todotxt-empty">Loading…</p>}
-            {!loading && displayed.length === 0 && <p class="todotxt-empty">No tasks yet.</p>}
+            {!loading && displayed.length === 0 && (
+              <p class="todotxt-empty">
+                {hasFilter ? 'No matching tasks.' : 'No tasks yet.'}
+              </p>
+            )}
             {displayed.map((task, i) => (
-              <div class="todotxt-task" key={i}>
+              <div class={{ 'todotxt-task': true, 'completed': task.completed }} key={i}>
                 <input type="checkbox" checked={task.completed}
                   onClick={() => {
-                    const next = [...tasks];
-                    const idx = tasks.indexOf(task);
-                    next[idx] = todoTxtParser.toggleComplete(task);
-                    saveTasks(next);
+                    const idx = tasksRef.current.indexOf(task);
+                    if (idx === -1) return;
+                    saveTasks(prev => {
+                      const next = [...prev];
+                      next[idx] = todoTxtParser.toggleComplete(task);
+                      return next;
+                    });
                   }}
                 />
                 {task.priority && !task.completed && (
@@ -336,21 +391,32 @@ export default defineWidget({
                   onDblClick={() => {
                     const newDesc = prompt('Edit task:', task.description);
                     if (newDesc !== null && newDesc.trim()) {
-                      const next = [...tasks];
-                      const idx = tasks.indexOf(task);
-                      next[idx] = { ...next[idx], description: newDesc.trim() };
-                      saveTasks(next);
+                      const idx = tasksRef.current.indexOf(task);
+                      if (idx === -1) return;
+                      saveTasks(prev => {
+                        const next = [...prev];
+                        next[idx] = { ...next[idx], description: newDesc.trim() };
+                        return next;
+                      });
                     }
                   }}>
                   {task.description}
                 </span>
-                {task.contexts.map(c => <span class="todotxt-ctx">@{c}</span>)}
-                {task.projects.map(p => <span class="todotxt-proj">+{p}</span>)}
+                {task.contexts.map(c => (
+                  <span class="todotxt-ctx" onClick={() => setFilter({ type: 'context', value: c })}>@{c}</span>
+                ))}
+                {task.projects.map(p => (
+                  <span class="todotxt-proj" onClick={() => setFilter({ type: 'project', value: p })}>+{p}</span>
+                ))}
+                {Object.entries(task.keyValues).map(([k, v]) => (
+                  <span class={{ 'todotxt-kv': true, [k]: true }}>{k}:{v}</span>
+                ))}
                 {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
                 <button class="bx bx-x todotxt-del" title="Delete"
                   onClick={() => {
-                    const next = todoTxtParser.removeTask(tasks, tasks.indexOf(task));
-                    saveTasks(next);
+                    const idx = tasksRef.current.indexOf(task);
+                    if (idx === -1) return;
+                    saveTasks(prev => todoTxtParser.removeTask(prev, idx));
                   }}
                 />
               </div>
