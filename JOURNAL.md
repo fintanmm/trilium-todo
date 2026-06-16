@@ -76,3 +76,15 @@
 - `pri:` key:value hidden from display (round-trip preservation only)
 - All mutation handlers use `tasksRef.current.indexOf(task)` for reliable index lookup across filtered/sorted lists
 - `saveTasks` consistently uses updater function pattern for correct batching
+
+## 2026-06-16 — Phase 7: Filter & Sort
+
+- Added text search input filtering by description (case-insensitive)
+- Added priority filter pills (`A`/`B`/`C`/`D`/`E`) — only shown for priorities present in tasks
+- Filter bar now shows when any priority pills exist, not just contexts/projects
+- Search and tag filters stack (can search + filter by context simultaneously)
+- Added `sortDisplayed` support for: priority filter, text search, `completed` sort key
+- Footer shows filtered count in accent color when filter/search is active: `3 / 10 (2)`
+- Added "Completed" sort option (sorts by completion date, newest first)
+- Escape key clears search then filter (if search is empty), skips when focused in search input or inline edit
+- Added refs for filter/search/editing state to avoid re-registering the keydown listener

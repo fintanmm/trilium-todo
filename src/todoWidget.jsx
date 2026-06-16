@@ -55,11 +55,30 @@ const styles = `
   color: var(--muted-text-color);
 }
 
+.todotxt-search input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input-background-color);
+  color: var(--input-text-color);
+  border: 1px solid var(--main-border-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.82em;
+  outline: none;
+  margin-bottom: 4px;
+}
+.todotxt-search input:focus {
+  border-color: var(--active-item-background-color);
+}
+.todotxt-search input::placeholder {
+  color: var(--muted-text-color);
+}
+
 .todotxt-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 6px 0;
+  padding: 4px 0 6px;
 }
 .todotxt-filters button {
   background: var(--accented-background-color);
@@ -243,7 +262,7 @@ const styles = `
 }
 `;
 
-function sortDisplayed(tasks, sortKey, filter) {
+function sortDisplayed(tasks, sortKey, filter, searchQuery) {
   let result = [...tasks];
 
   if (filter) {
@@ -251,12 +270,20 @@ function sortDisplayed(tasks, sortKey, filter) {
       result = todoTxtParser.filter.byContext(result, filter.value);
     } else if (filter.type === 'project') {
       result = todoTxtParser.filter.byProject(result, filter.value);
+    } else if (filter.type === 'priority') {
+      result = todoTxtParser.filter.byPriority(result, filter.value);
     }
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    result = result.filter(t => t.description.toLowerCase().includes(q));
   }
 
   result = todoTxtParser.sort.byCompleted(result, false);
   if (sortKey === 'priority') result = todoTxtParser.sort.byPriority(result);
   else if (sortKey === 'created') result = todoTxtParser.sort.byCreationDate(result, true);
+  else if (sortKey === 'completed') result = todoTxtParser.sort.byCompletionDate(result, true);
 
   return result;
 }
@@ -270,12 +297,20 @@ export default defineWidget({
     const [visible, setVisible] = useState(true);
     const [filter, setFilter] = useState(null);
     const [sortKey, setSortKey] = useState('priority');
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [editingIdx, setEditingIdx] = useState(null);
 
     const tasksRef = useRef(tasks);
+    const filterRef = useRef(filter);
+    const searchRefState = useRef(searchQuery);
+    const editingRef = useRef(editingIdx);
     useEffect(() => { tasksRef.current = tasks; }, [tasks]);
+    useEffect(() => { filterRef.current = filter; }, [filter]);
+    useEffect(() => { searchRefState.current = searchQuery; }, [searchQuery]);
+    useEffect(() => { editingRef.current = editingIdx; }, [editingIdx]);
     const editRef = useRef(null);
+    const searchRef = useRef(null);
 
     const loadTasks = useCallback(async () => {
       setLoading(true);
@@ -290,7 +325,14 @@ export default defineWidget({
       const unsub = todoStore.onChange(() => {
         if (visible) loadTasks();
       });
-      return unsub;
+      function onKeyDown(e) {
+        if (e.key === 'Escape' && editingRef.current === null && !e.target.closest('.todotxt-search') && !e.target.closest('.todotxt-edit-input')) {
+          if (searchRefState.current) { setSearchQuery(''); searchRef.current?.focus(); }
+          else if (filterRef.current) setFilter(null);
+        }
+      }
+      window.addEventListener('keydown', onKeyDown);
+      return () => { unsub(); window.removeEventListener('keydown', onKeyDown); };
     }, [visible]);
 
     useEffect(() => {
@@ -343,15 +385,17 @@ export default defineWidget({
       );
     }
 
-    const displayed = sortDisplayed(tasks, sortKey, filter);
-    const hasFilter = filter !== null;
+    const displayed = sortDisplayed(tasks, sortKey, filter, searchQuery);
+    const hasFilter = filter !== null || searchQuery !== '';
     const allContexts = todoTxtParser.uniqueContexts(tasks);
     const allProjects = todoTxtParser.uniqueProjects(tasks);
+    const prios = ['A','B','C','D','E'].filter(p => tasks.some(t => t.priority === p));
+    const filteredCount = displayed.length;
 
     return (
       <div>
         <style>{styles}</style>
-        <div class="todotxt-widget">
+        <div class="todotxt-widget" tabIndex={-1}>
           <div class="todotxt-header">
             <strong>todo.txt</strong>
             <button class="bx bx-hide" onClick={() => setVisible(false)} title="Hide" style="margin-left: auto;"></button>
@@ -369,21 +413,34 @@ export default defineWidget({
             />
           </div>
 
-          {(allContexts.length > 0 || allProjects.length > 0) && (
+          <div class="todotxt-search">
+            <input ref={searchRef} type="text" placeholder="Search…" value={searchQuery}
+              onInput={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') { setSearchQuery(''); e.target.blur(); } }}
+            />
+          </div>
+
+          {(allContexts.length > 0 || allProjects.length > 0 || prios.length > 0) && (
             <div class="todotxt-filters">
               {allContexts.map(c => (
                 <button class={filter?.value === c && filter?.type === 'context' ? 'active' : ''}
-                  onClick={() => setFilter(filter?.value === c ? null : { type: 'context', value: c })}>
+                  onClick={() => setFilter(filter?.value === c && filter?.type === 'context' ? null : { type: 'context', value: c })}>
                   @{c}
                 </button>
               ))}
               {allProjects.map(p => (
                 <button class={filter?.value === p && filter?.type === 'project' ? 'active' : ''}
-                  onClick={() => setFilter(filter?.value === p ? null : { type: 'project', value: p })}>
+                  onClick={() => setFilter(filter?.value === p && filter?.type === 'project' ? null : { type: 'project', value: p })}>
                   +{p}
                 </button>
               ))}
-              {filter && <button class="todotxt-clear" onClick={() => setFilter(null)}>✕</button>}
+              {prios.map(p => (
+                <button class={filter?.value === p && filter?.type === 'priority' ? 'active' : ''}
+                  onClick={() => setFilter(filter?.value === p && filter?.type === 'priority' ? null : { type: 'priority', value: p })}>
+                  {p}
+                </button>
+              ))}
+              {hasFilter && <button class="todotxt-clear" onClick={() => { setFilter(null); setSearchQuery(''); }}>✕</button>}
             </div>
           )}
 
@@ -454,10 +511,11 @@ export default defineWidget({
           </div>
 
           <div class="todotxt-footer">
-            <span>{tasks.filter(t => !t.completed).length} / {tasks.length}</span>
+            <span>{tasks.filter(t => !t.completed).length} / {tasks.length}{hasFilter && <span style="margin-left:4px;color:var(--primary-button-background-color)">({filteredCount})</span>}</span>
             <select value={sortKey} onChange={e => setSortKey(e.target.value)}>
               <option value="priority">Priority</option>
               <option value="created">Created</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
         </div>
