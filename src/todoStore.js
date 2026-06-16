@@ -35,7 +35,9 @@ module.exports = {
     const noteId = await this._resolveNote();
     if (!noteId) return '';
     try {
-      return await api.getNoteContent(noteId);
+      const note = await api.getNote(noteId);
+      const { content } = await note.getNoteComplement();
+      return content || '';
     } catch (e) {
       console.error('todoStore.load error:', e);
       return '';
@@ -46,13 +48,20 @@ module.exports = {
     try {
       let noteId = await this._resolveNote();
       if (!noteId) {
-        const note = await api.createNote('root', 'todo.txt', content, 'text', [
-          { type: 'label', name: this.STORE_LABEL }
-        ]);
-        const n = note.note || note;
-        this._noteId = n.noteId;
+        const newId = await api.runOnBackend(
+          ({ label, content }) => {
+            const note = api.createTextNote('root', 'todo.txt', content);
+            api.createLabel(note.note.noteId, label);
+            return note.note.noteId;
+          },
+          { label: this.STORE_LABEL, content }
+        );
+        this._noteId = newId;
       } else {
-        await api.putNoteContent(noteId, content);
+        await api.runOnBackend(
+          ({ noteId, content }) => api.putNoteContent(noteId, content),
+          { noteId, content }
+        );
       }
       this._notify();
     } catch (e) {
