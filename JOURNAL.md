@@ -28,3 +28,19 @@
   - Added sort selector (priority / created date)
   - Added task counter (incomplete / total)
   - Shows creation dates on tasks
+
+## 2026-06-16 — Phase 3: Store Module
+
+- Refined `todoStore.js`:
+  - Caches note ID across calls to avoid repeated `searchForNotes` queries
+  - `invalidateCache()` to force re-resolve if the backing note is replaced
+  - `saveDebounced(content)` — 500ms debounce for batching rapid task changes
+  - `onChange(fn)` — subscribe to store changes; returns unsubscribe function
+  - Error handling with try/catch on all API calls
+  - Auto-creates backing note with `#todotxtStore` label when missing
+- Updated `todoWidget.jsx`:
+  - Switched from `save()` to `saveDebounced()` for instant UI + async persistence
+  - Added `loading` state with "Loading…" indicator
+  - Subscribes to `todoStore.onChange` for reactivity on external changes
+  - Unsubscribes on unmount
+  - Reloads tasks when toggling widget back visible

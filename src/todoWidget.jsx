@@ -9,25 +9,35 @@ export default defineWidget({
     const [visible, setVisible] = useState(true);
     const [filter, setFilter] = useState(null);
     const [sortKey, setSortKey] = useState('priority');
+    const [loading, setLoading] = useState(true);
 
     const loadTasks = useCallback(async () => {
+      setLoading(true);
       const content = await todoStore.load();
       setTasks(todoTxtParser.parse(content));
+      setLoading(false);
     }, []);
 
     useEffect(() => {
       loadTasks();
       api.registerKeyboardShortcut('Ctrl+Shift+T', 'todotxt-toggle', () => setVisible(v => !v));
-    }, []);
+      const unsub = todoStore.onChange(() => {
+        if (visible) loadTasks();
+      });
+      return unsub;
+    }, [visible]);
 
-    const saveTasks = useCallback(async (newTasks) => {
+    const saveTasks = useCallback((newTasks) => {
       setTasks(newTasks);
-      await todoStore.save(todoTxtParser.serialize(newTasks));
+      todoStore.saveDebounced(todoTxtParser.serialize(newTasks));
     }, []);
 
     if (!visible) {
       return (
-        <div class="todotxt-widget" style="padding: 8px; cursor: pointer;" onClick={() => setVisible(true)}>
+        <div class="todotxt-widget" style="padding: 8px; cursor: pointer;" onClick={() => {
+          setVisible(true);
+          loadTasks();
+        }}>
           <button class="bx bx-list-check" title="Show todo.txt"></button>
         </div>
       );
@@ -59,7 +69,7 @@ export default defineWidget({
             onKeyDown={async (e) => {
               if (e.key === 'Enter' && e.target.value.trim()) {
                 const next = todoTxtParser.addTask(tasks, e.target.value);
-                await saveTasks(next);
+                saveTasks(next);
                 e.target.value = '';
               }
             }}
@@ -85,15 +95,16 @@ export default defineWidget({
         )}
 
         <div class="todotxt-body">
-          {displayed.length === 0 && <p class="todotxt-empty">No tasks yet.</p>}
+          {loading && <p class="todotxt-empty">Loading…</p>}
+          {!loading && displayed.length === 0 && <p class="todotxt-empty">No tasks yet.</p>}
           {displayed.map((task, i) => (
             <div class="todotxt-task" key={i}>
               <input type="checkbox" checked={task.completed}
-                onClick={async () => {
+                onClick={() => {
                   const next = [...tasks];
                   const idx = tasks.indexOf(task);
                   next[idx] = todoTxtParser.toggleComplete(task);
-                  await saveTasks(next);
+                  saveTasks(next);
                 }}
               />
               {task.priority && !task.completed && <span class="todotxt-prio">{task.priority}</span>}
@@ -113,9 +124,9 @@ export default defineWidget({
               {task.projects.map(p => <span class="todotxt-proj">+{p}</span>)}
               {task.creationDate && <span class="todotxt-date">{task.creationDate}</span>}
               <button class="bx bx-x todotxt-del" title="Delete"
-                onClick={async () => {
+                onClick={() => {
                   const next = todoTxtParser.removeTask(tasks, tasks.indexOf(task));
-                  await saveTasks(next);
+                  saveTasks(next);
                 }}
               />
             </div>
