@@ -44,3 +44,14 @@
   - Subscribes to `todoStore.onChange` for reactivity on external changes
   - Unsubscribes on unmount
   - Reloads tasks when toggling widget back visible
+
+## 2026-06-16 — Phase 4: Widget Shell
+
+- Added embedded CSS via `<style>` block in widget JSX
+- Styles use Trilium CSS variables (`--main-background-color`, `--main-text-color`, `--muted-text-color`, `--main-border-color`, `--accented-background-color`, `--input-*`, `--hover-*`, `--button-*`, `--primary-button-*`) for full dark/light theme compatibility
+- Priority color coding: A=red, B=orange, C=yellow (via `data-prio` attribute)
+- Contexts styled in blue (`--context-color`), projects in green
+- Completed tasks: line-through + muted color
+- Hover effects on task rows (background highlight, delete button fade-in)
+- Focus states on input and select fields
+- Transitions on interactive elements (hover, filter pills, button fade)
