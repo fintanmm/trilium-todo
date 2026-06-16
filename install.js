@@ -131,64 +131,88 @@ async function run() {
   console.log("[1/4] Resolving parent note…");
   const parent = await resolveFolderChain(["Trilium", "Trilium todo.txt"]);
 
-  const spec = [
-    {
-      title: "TodoTXT Widget",
+  console.log("\n[2/4] Installing bundle notes…");
+
+  // Step A: Create/update the widget note under the parent folder.
+  // Bundle child notes (todoTxtParser, todoStore) must be DIRECT children
+  // of the widget note so that Trilium evaluates them as globals.
+  const widgetTitle = "TodoTXT Widget";
+  let widgetNote = await findChildByTitle(parent.noteId, widgetTitle);
+
+  if (widgetNote) {
+    console.log(`  ~ "${widgetTitle}" (${widgetNote.noteId}) — updating`);
+
+    // Clean up stale #scriptBundle label from previous installs
+    // (not a real Trilium system label and may interfere with bundle loading).
+    try {
+      const full = await getNote(widgetNote.noteId);
+      const staleAttr = (full.labels || []).find(
+        (a) => a.type === "label" && a.name === "scriptBundle",
+      );
+      if (staleAttr && staleAttr.attributeId) {
+        await api("DELETE", `attributes/${staleAttr.attributeId}`, null);
+        console.log(`  ✔ Removed stale "#scriptBundle" label`);
+      }
+    } catch {
+      // Best-effort; label might not exist or API may differ
+    }
+
+    await api("PUT", `notes/${widgetNote.noteId}/content`, {
+      content: readSource("todoWidget.jsx"),
+    });
+  } else {
+    console.log(`  + "${widgetTitle}" — creating`);
+    const r = await api("POST", "notes", {
+      parentNoteId: parent.noteId,
+      title: widgetTitle,
       type: "code",
       mime: "text/x-trilium-jsx",
       content: readSource("todoWidget.jsx"),
-      labels: [
-        { name: "widget" },
-        { name: "run", value: "frontendStartup" },
-        { name: "codeMime", value: "text/x-trilium-jsx" },
+      attributes: [
+        { type: "label", name: "widget" },
+        { type: "label", name: "run", value: "frontendStartup" },
+        { type: "label", name: "codeMime", value: "text/x-trilium-jsx" },
       ],
-    },
-    {
-      title: "todoTxtParser",
-      type: "code",
-      mime: "application/javascript;env=frontend",
-      content: readSource("todoTxtParser.js"),
-      labels: [
-        { name: "codeMime", value: "application/javascript;env=frontend" },
-      ],
-    },
-    {
-      title: "todoStore",
-      type: "code",
-      mime: "application/javascript;env=frontend",
-      content: readSource("todoStore.js"),
-      labels: [
-        { name: "codeMime", value: "application/javascript;env=frontend" },
-      ],
-    },
+    });
+    widgetNote = r.note;
+    console.log(`    → ${widgetNote.noteId}`);
+  }
+
+  // Step B: Create/update bundle child notes (globals) under the widget note.
+  const bundleChildren = [
+    { title: "todoTxtParser", file: "todoTxtParser.js", mime: "application/javascript;env=frontend" },
+    { title: "todoStore",     file: "todoStore.js",     mime: "application/javascript;env=frontend" },
   ];
 
-  console.log("\n[2/4] Installing bundle notes…");
-  for (const s of spec) {
-    const existing = await findChildByTitle(parent.noteId, s.title);
-
+  for (const c of bundleChildren) {
+    const existing = await findChildByTitle(widgetNote.noteId, c.title);
     if (existing) {
-      console.log(`  ~ "${s.title}" (${existing.noteId}) — updating content`);
+      console.log(`  ~ "${c.title}" (${existing.noteId}) — updating`);
       await api("PUT", `notes/${existing.noteId}/content`, {
-        content: s.content,
+        content: readSource(c.file),
       });
-      // Labels are set once on creation via the attributes payload below;
-      // re-install only overwrites content.
     } else {
-      console.log(`  + "${s.title}" — creating`);
-      const result = await api("POST", "notes", {
-        parentNoteId: parent.noteId,
-        title: s.title,
-        type: s.type,
-        mime: s.mime,
-        content: s.content,
-        attributes: s.labels.map((l) => ({
-          type: "label",
-          name: l.name,
-          value: l.value || "",
-        })),
+      console.log(`  + "${c.title}" — creating`);
+      const r = await api("POST", "notes", {
+        parentNoteId: widgetNote.noteId,
+        title: c.title,
+        type: "code",
+        mime: c.mime,
+        content: readSource(c.file),
+        attributes: [{ type: "label", name: "codeMime", value: c.mime }],
       });
-      console.log(`    → ${result.note.noteId}`);
+      console.log(`    → ${r.note.noteId}`);
+    }
+
+    // Delete orphan sibling notes left behind by previous flat installs.
+    const orphan = await findChildByTitle(parent.noteId, c.title);
+    if (orphan) {
+      try {
+        await api("DELETE", `notes/${orphan.noteId}`, null);
+        console.log(`  ✔ Removed orphan sibling "${c.title}" (${orphan.noteId})`);
+      } catch {
+        console.log(`  ⚠ Could not delete orphan sibling "${c.title}"`);
+      }
     }
   }
 
