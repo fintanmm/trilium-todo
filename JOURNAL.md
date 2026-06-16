@@ -112,3 +112,10 @@
 - Changed parent from root-level "Trilium todo.txt" to Root → Trilium → Trilium todo.txt
 - Removed `PUT /etapi/notes/{id}/labels` calls (endpoint doesn't exist; labels set via `attributes` on creation only)
 - Changed default port from 7777 to 37840 to match this Trilium instance
+
+## 2026-06-16 — Fix: RightPanelWidget wrapper + JSX setup reminder
+
+- Added `RightPanelWidget` import from `"trilium:preact"` and wrapped the widget body in `<RightPanelWidget id="todotxt" title="todo.txt">` so the widget properly registers as a named section in the right sidebar (required by Trilium's new layout)
+- Removed manual `.todotxt-header` section (the section header is now provided by `RightPanelWidget`)
+- Moved the hide button to the footer area
+- Added JSX setup reminder to install.js output

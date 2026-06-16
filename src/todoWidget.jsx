@@ -1,4 +1,4 @@
-import { defineWidget, useState, useEffect, useCallback, useRef } from "trilium:preact";
+import { defineWidget, RightPanelWidget, useState, useEffect, useCallback, useRef } from "trilium:preact";
 
 const styles = `
 .todotxt-widget {
@@ -11,35 +11,6 @@ const styles = `
   outline: 2px solid var(--active-item-background-color);
   outline-offset: -2px;
   border-radius: 4px;
-}
-
-.todotxt-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--main-border-color);
-  margin-bottom: 6px;
-}
-
-.todotxt-header strong {
-  font-size: 0.9em;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--muted-text-color);
-}
-
-.todotxt-header button {
-  background: none;
-  border: none;
-  color: var(--muted-text-color);
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-.todotxt-header button:hover {
-  background: var(--accented-background-color);
-  color: var(--main-text-color);
 }
 
 .todotxt-add input {
@@ -286,6 +257,20 @@ const styles = `
 .todotxt-footer select:focus {
   border-color: var(--active-item-background-color);
 }
+
+.todotxt-hide {
+  background: none;
+  border: none;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1em;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+.todotxt-hide:hover {
+  color: var(--main-text-color);
+}
 `;
 
 function sortDisplayed(tasks, sortKey, filter, searchQuery) {
@@ -430,14 +415,9 @@ export default defineWidget({
     const filteredCount = displayed.length;
 
     return (
-      <div>
+      <RightPanelWidget id="todotxt" title="todo.txt">
         <style>{styles}</style>
         <div class="todotxt-widget" tabIndex={-1}>
-          <div class="todotxt-header">
-            <strong>todo.txt</strong>
-            <button class="bx bx-hide" onClick={() => setVisible(false)} aria-label="Hide" title="Hide" style="margin-left: auto;"></button>
-          </div>
-
           <div class="todotxt-add">
             <input type="text" placeholder="+ Add task…"
               onKeyDown={(e) => {
@@ -549,7 +529,9 @@ export default defineWidget({
           </div>
 
           <div class="todotxt-footer">
-            <span>{tasks.filter(t => !t.completed).length} / {tasks.length}{hasFilter && <span style="margin-left:4px;color:var(--primary-button-background-color)">({filteredCount})</span>}</span>
+            <span>{tasks.filter(t => !t.completed).length} / {tasks.length}{hasFilter && <span style="margin-left:4px;color:var(--primary-button-background-color)">({filteredCount})</span>}
+              <button class="bx bx-hide todotxt-hide" onClick={() => setVisible(false)} aria-label="Hide todo.txt" title="Hide"></button>
+            </span>
             <select value={sortKey} onChange={e => setSortKey(e.target.value)}>
               <option value="priority">Priority</option>
               <option value="created">Created</option>
@@ -557,7 +539,7 @@ export default defineWidget({
             </select>
           </div>
         </div>
-      </div>
+      </RightPanelWidget>
     );
   }
 });

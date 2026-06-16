@@ -211,7 +211,8 @@ async function run() {
   }
 
   const elapsed = ((Date.now() - startTotal) / 1000).toFixed(1);
-  console.log(`\n[4/4] Done in ${elapsed}s. Reload Trilium to see the widget.`);
+  console.log(`\n[4/4] Done in ${elapsed}s.`);
+  console.log("Make sure JSX is enabled in Options → Code Notes → check \"JSX\", then reload Trilium.");
 }
 
 run().catch((err) => {
