@@ -100,6 +100,13 @@ module.exports = {
           ? b.completionDate.localeCompare(a.completionDate)
           : a.completionDate.localeCompare(b.completionDate);
       });
+    },
+    byCompleted(tasks, completedFirst = false) {
+      return [...tasks].sort((a, b) => {
+        if (a.completed === b.completed) return 0;
+        if (completedFirst) return a.completed ? -1 : 1;
+        return a.completed ? 1 : -1;
+      });
     }
   }
 };
