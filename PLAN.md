@@ -9,13 +9,17 @@ A **Preact widget** (`trilium:preact`) mounted in the **right-pane** that reads/
 ## Component Structure (note tree in Trilium)
 
 ```
-📁 TodoTXT Widget          (JS frontend, #widget, run=frontendStartup)
-  ├── 📄 todoTxtParser.js  (parse/serialize todo.txt lines)
-  ├── 📄 todoStore.js      (read/write the backing text note via api)
-  └── 📄 todoWidget.jsx    (Preact UI — the widget itself)
+📁 Trilium                    (text folder — created automatically)
+  └── 📁 Trilium todo.txt       (text folder — container for plugin notes)
+        └── 📁 TodoTXT Widget   (code, JSX frontend, #widget, #run=frontendStartup, #codeMime=text/x-trilium-jsx)
+              ├── 📄 todoTxtParser  (code JS, #codeMime=application/javascript;env=frontend — parsed as global `todoTxtParser`)
+              └── 📄 todoStore      (code JS, #codeMime=application/javascript;env=frontend — parsed as global `todoStore`)
+
+Backing storage:
+📄 todo.txt                   (text, #todotxtStore — located at root level)
 ```
 
-Backing storage: a single text note (e.g. `📄 todo.txt`) with a `#todotxtStore` label so the widget can find it by attribute search.
+> **Important**: Bundle child notes (`todoTxtParser`, `todoStore`) must be **direct children** of the widget note, not siblings. Trilium evaluates child notes first and exposes their `module.exports` as globals named after the note title (spaces stripped).
 
 ## Data Flow
 
@@ -66,7 +70,7 @@ Backing storage: a single text note (e.g. `📄 todo.txt`) with a `#todotxtStore
 
 | Phase                   | What                                                             |
 | ----------------------- | ---------------------------------------------------------------- |
-| **1. Project scaffold** | Create note structure, `#widget` label, `run=frontendStartup`    |
+| **1. Project scaffold** | Create note structure: `TodoTXT Widget` with `#widget`, `#run=frontendStartup`, `#codeMime=text/x-trilium-jsx`; child notes `todoTxtParser` and `todoStore` under the widget with `#codeMime=application/javascript;env=frontend` |
 | **2. Parser module**    | `todoTxtParser.js` — parse/serialize functions                   |
 | **3. Store module**     | `todoStore.js` — find backing note, read/write content           |
 | **4. Widget shell**     | Basic Preact widget rendering in right-pane                      |

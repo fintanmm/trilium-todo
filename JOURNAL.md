@@ -119,3 +119,19 @@
 - Removed manual `.todotxt-header` section (the section header is now provided by `RightPanelWidget`)
 - Moved the hide button to the footer area
 - Added JSX setup reminder to install.js output
+
+## 2026-06-16 — Fix: Bundle child notes as widget children (fixes ReferenceError)
+
+- **Root cause**: `todoTxtParser` and `todoStore` were created as siblings of `TodoTXT Widget` under the parent folder. Trilium's bundle system only evaluates **direct children** of the running script/widget note as globals — sibling notes are not loaded.
+- **Fix**: Restructured `install.js` to create `todoTxtParser` and `todoStore` as children of `TodoTXT Widget`, not as siblings. Added `#scriptBundle` label to the widget note to explicitly signal bundle module loading.
+- **Migration**: The installer now detects orphaned sibling copies and warns the user to delete them manually.
+- Updated `README.md` manual install table to include `#scriptBundle`.
+- Updated `PLAN.md` component structure tree to show correct parent → widget → children hierarchy.
+
+## 2026-06-16 — Fix: Frontend API methods not available (getNoteContent, putNoteContent, registerKeyboardShortcut)
+
+- **Root cause**: The widget bundle used backend-only API methods (`api.getNoteContent`, `api.putNoteContent`) and `api.registerKeyboardShortcut` which doesn't exist on the frontend API in this Trilium version.
+- **`todoStore.js`**:
+  - `load()`: Replaced `api.getNoteContent(noteId)` with `api.getNote(noteId)` + `note.getNoteComplement()` — matches the official word count widget pattern.
+  - `save()`: Replaced `api.createNote` and `api.putNoteContent` (frontend-only) with `api.runOnBackend` — the correct way to execute backend code from the frontend. Note creation uses `api.createTextNote` + `api.createLabel` on the backend; updates use `api.putNoteContent` on the backend.
+- **`todoWidget.jsx`**: Replaced `api.registerKeyboardShortcut("Ctrl+Shift+T", ...)` with native `window.addEventListener('keydown', ...)` checking for `Ctrl+Shift+T` — more portable and works across all Trilium versions.

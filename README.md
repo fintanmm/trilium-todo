@@ -38,6 +38,17 @@ Create the following notes in Trilium:
 | `todoStore` (child of widget)     | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoStore.js`       |
 | `todo.txt`                        | Text              | `#todotxtStore`                                                   | (empty, will hold tasks) |
 
+The resulting note tree must look like this (bundle child notes as direct children of the widget):
+
+```
+Trilium todo.txt (text folder)
+└── TodoTXT Widget (code JSX, #widget, #run=frontendStartup, #codeMime=text/x-trilium-jsx)
+    ├── todoTxtParser (code JS, #codeMime=application/javascript;env=frontend)
+    └── todoStore (code JS, #codeMime=application/javascript;env=frontend)
+
+todo.txt (text, #todotxtStore — anywhere in the tree)
+```
+
 After creating the notes, reload Trilium.
 
 ## Usage
