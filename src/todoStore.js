@@ -50,18 +50,35 @@ module.exports = {
       if (!noteId) {
         const newId = await api.runOnBackend(
           ({ label, content }) => {
-            const note = api.createTextNote('root', 'todo.txt', content);
-            api.createLabel(note.note.noteId, label);
-            return note.note.noteId;
+            const { note } = api.createTextNote('root', 'todo.txt', content);
+            note.setLabel(label);
+            return note.noteId;
           },
-          { label: this.STORE_LABEL, content }
+          [{ label: this.STORE_LABEL, content }]
         );
         this._noteId = newId;
       } else {
-        await api.runOnBackend(
-          ({ noteId, content }) => api.putNoteContent(noteId, content),
-          { noteId, content }
-        );
+        try {
+          await api.runOnBackend(
+            ({ noteId, content }) => {
+              const note = api.getNote(noteId);
+              note.setContent(content);
+            },
+            [{ noteId, content }]
+          );
+        } catch (e) {
+          console.error('todoStore.save: putNoteContent failed, recreating note:', e);
+          this._noteId = null;
+          const newId = await api.runOnBackend(
+            ({ label, content }) => {
+              const { note } = api.createTextNote('root', 'todo.txt', content);
+              note.setLabel(label);
+              return note.noteId;
+            },
+            [{ label: this.STORE_LABEL, content }]
+          );
+          this._noteId = newId;
+        }
       }
       this._notify();
     } catch (e) {

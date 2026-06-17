@@ -522,16 +522,11 @@ module.exports = defineWidget({
     }, [editingIdx]);
 
     const saveTasks = (updater) => {
-      if (typeof updater === "function") {
-        setTasks((prev) => {
-          const next = updater(prev);
-          todoStore.saveDebounced(todoTxtParser.serialize(next));
-          return next;
-        });
-      } else {
-        setTasks(updater);
-        todoStore.saveDebounced(todoTxtParser.serialize(updater));
-      }
+      setTasks((prev) => {
+        const next = updater(prev);
+        todoStore.saveDebounced(todoTxtParser.serialize(next));
+        return next;
+      });
     };
 
     function findRealIdx(task) {
@@ -610,14 +605,11 @@ module.exports = defineWidget({
             <input
               type="text"
               placeholder="+ Add task…"
-              onKeyDown={(e) => {
+               onKeyDown={(e) => {
                 if (e.key === "Enter" && e.target.value.trim()) {
-                  const next = todoTxtParser.addTask(
-                    tasksRef.current,
-                    e.target.value,
-                  );
-                  saveTasks(next);
+                  const text = e.target.value;
                   e.target.value = "";
+                  saveTasks((prev) => todoTxtParser.addTask(prev, text));
                 }
               }}
             />
