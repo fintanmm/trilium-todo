@@ -135,3 +135,15 @@
   - `load()`: Replaced `api.getNoteContent(noteId)` with `api.getNote(noteId)` + `note.getNoteComplement()` — matches the official word count widget pattern.
   - `save()`: Replaced `api.createNote` and `api.putNoteContent` (frontend-only) with `api.runOnBackend` — the correct way to execute backend code from the frontend. Note creation uses `api.createTextNote` + `api.createLabel` on the backend; updates use `api.putNoteContent` on the backend.
 - **`todoWidget.jsx`**: Replaced `api.registerKeyboardShortcut("Ctrl+Shift+T", ...)` with native `window.addEventListener('keydown', ...)` checking for `Ctrl+Shift+T` — more portable and works across all Trilium versions.
+
+## 2026-06-18 — Archive feature
+
+- **`todoStore.js`**: Added `ARCHIVE_LABEL`, `_archiveNoteId`, `_archiveAppendPromise`, `_resolveArchiveNote()`, `loadArchive()`, `saveArchive()`, `appendToArchive()` for managing a separate `#todotxtArchive` backing note.
+- `appendToArchive()` uses promise chaining to serialize concurrent appends, preventing race conditions.
+- **`todoWidget.jsx`**: Added archive UI:
+  - **Archive button** (📥) on each completed task row — calls `archiveTask(idx)` to remove from active and append to archive.
+  - **Archive all** footer link — archives all completed tasks at once.
+  - **Archived** footer link — opens dedicated archive view that loads from `#todotxtArchive` note.
+  - **Archive view** — shows archived tasks with **Unarchive** (↩️) and **Delete** (✕) options.
+  - `unarchiveTask()` moves the task back to the active note (sets `completed=false`).
+- Updated `README.md`, `PLAN.md`, `install.js` to document the archive backing note.

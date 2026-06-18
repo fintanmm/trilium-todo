@@ -9,6 +9,7 @@ A [Trilium Notes](https://github.com/TriliumNext/Trilium) widget plugin that imp
 - **Toggle visibility** — Hide/show the widget with a button or `Ctrl+Shift+T` keyboard shortcut.
 - **Task management** — Add, complete, delete, and filter tasks inline.
 - **Persistent storage** — Tasks are stored in a standard text note inside Trilium.
+- **Archive** — Completed tasks can be archived to a separate note for a clean working list.
 
 ## Requirements
 
@@ -37,6 +38,7 @@ Create the following notes in Trilium:
 | `todoTxtParser` (child of widget) | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoTxtParser.js`   |
 | `todoStore` (child of widget)     | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoStore.js`       |
 | `todo.txt`                        | Text              | `#todotxtStore`                                                   | (empty, will hold tasks) |
+| `todo.txt (archive)`              | Text              | `#todotxtArchive`                                                 | (empty)                  |
 
 The resulting note tree must look like this (bundle child notes as direct children of the widget):
 
@@ -47,6 +49,7 @@ Trilium todo.txt (text folder)
     └── todoStore (code JS, #codeMime=application/javascript;env=frontend)
 
 todo.txt (text, #todotxtStore — anywhere in the tree)
+todo.txt (archive) (text, #todotxtArchive — anywhere in the tree)
 ```
 
 After creating the notes, reload Trilium.
@@ -56,6 +59,8 @@ After creating the notes, reload Trilium.
 - The widget appears in the right sidebar.
 - Type a task in the input field and press Enter to add it.
 - Click the checkbox to complete a task.
+- Click the archive button (📥) on a completed task to archive it, or use **Archive all** in the footer.
+- Click **Archived** in the footer to view, unarchive, or permanently delete archived tasks.
 - Click the hide button or press `Ctrl+Shift+T` to toggle the widget.
 - Use `@context` and `+project` tags in task descriptions for filtering.
 

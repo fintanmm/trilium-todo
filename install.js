@@ -218,8 +218,8 @@ async function run() {
 
   // Check for backing todo.txt note
   console.log("\n[3/4] Checking backing note (#todotxtStore)…");
-  const search = await api("GET", "notes?search=%23todotxtStore");
-  const storeNote = search.results && search.results[0];
+  let search = await api("GET", "notes?search=%23todotxtStore");
+  let storeNote = search.results && search.results[0];
   if (!storeNote) {
     console.log("  + Creating backing note…");
     const result = await api("POST", "notes", {
@@ -234,8 +234,26 @@ async function run() {
     console.log(`  → "${storeNote.title}" (${storeNote.noteId})`);
   }
 
+  // Check for archive backing note
+  console.log("\n[4/4] Checking archive note (#todotxtArchive)…");
+  search = await api("GET", "notes?search=%23todotxtArchive");
+  storeNote = search.results && search.results[0];
+  if (!storeNote) {
+    console.log("  + Creating archive note…");
+    const result = await api("POST", "notes", {
+      parentNoteId: "root",
+      title: "todo.txt (archive)",
+      type: "text",
+      content: "",
+      attributes: [{ type: "label", name: "todotxtArchive" }],
+    });
+    console.log(`    → "${result.note.title}" (${result.note.noteId})`);
+  } else {
+    console.log(`  → "${storeNote.title}" (${storeNote.noteId})`);
+  }
+
   const elapsed = ((Date.now() - startTotal) / 1000).toFixed(1);
-  console.log(`\n[4/4] Done in ${elapsed}s.`);
+  console.log(`\n[5/5] Done in ${elapsed}s.`);
   console.log("Make sure JSX is enabled in Options → Code Notes → check \"JSX\", then reload Trilium.");
 }
 
