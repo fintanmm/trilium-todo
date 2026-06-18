@@ -402,6 +402,51 @@ const styles = `
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ── Archive button ── */
+.todotxt-archive-btn {
+  background: none;
+  border: none;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: 1px 4px;
+  font-size: 1em;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+  border-radius: 4px;
+  line-height: 1;
+}
+.todotxt-archive-btn:focus-visible {
+  opacity: 0.8;
+  outline: 1px solid var(--active-item-background-color);
+}
+.todotxt-task:hover .todotxt-archive-btn {
+  opacity: 0.5;
+}
+.todotxt-task .todotxt-archive-btn:hover {
+  opacity: 1;
+  color: #2980b9;
+  transform: scale(1.15);
+}
+.todotxt-task .todotxt-del:hover {
+  opacity: 1;
+  color: #e74c3c;
+  transform: scale(1.15);
+}
+
+/* ── Footer link ── */
+.todotxt-footer-link {
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  color: var(--muted-text-color);
+}
+.todotxt-footer-link:hover {
+  background: var(--accented-background-color);
+  color: var(--main-text-color);
+}
 `;
 
 function sortDisplayed(tasks, sortKey, filter, searchQuery) {
@@ -447,6 +492,8 @@ module.exports = defineWidget({
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [editingIdx, setEditingIdx] = useState(null);
+    const [viewArchived, setViewArchived] = useState(false);
+    const [archivedTasks, setArchivedTasks] = useState([]);
 
     const tasksRef = useRef(tasks);
     const filterRef = useRef(filter);
@@ -547,6 +594,52 @@ module.exports = defineWidget({
       });
     }
 
+    function archiveTask(idx) {
+      const task = tasksRef.current[idx];
+      if (!task || !task.completed) return;
+      const line = todoTxtParser.serialize([task]);
+      saveTasks((prev) => {
+        const next = [...prev];
+        next.splice(idx, 1);
+        return next;
+      });
+      todoStore.appendToArchive(line);
+    }
+
+    function archiveAllCompleted() {
+      const completed = tasksRef.current.filter((t) => t.completed);
+      if (completed.length === 0) return;
+      const lines = todoTxtParser.serialize(completed);
+      saveTasks((prev) => prev.filter((t) => !t.completed));
+      todoStore.appendToArchive(lines);
+    }
+
+    async function unarchiveTask(idx) {
+      const task = archivedTasks[idx];
+      if (!task) return;
+      const updated = [...archivedTasks];
+      updated.splice(idx, 1);
+      setArchivedTasks(updated);
+      todoStore.saveArchive(todoTxtParser.serialize(updated));
+      const unarchived = todoTxtParser.toggleComplete(
+        { ...task, keyValues: { ...task.keyValues } }
+      );
+      saveTasks((prev) => [...prev, unarchived]);
+    }
+
+    function deleteArchivedTask(idx) {
+      const updated = [...archivedTasks];
+      updated.splice(idx, 1);
+      setArchivedTasks(updated);
+      todoStore.saveArchive(todoTxtParser.serialize(updated));
+    }
+
+    async function loadAndViewArchived() {
+      const content = await todoStore.loadArchive();
+      setArchivedTasks(todoTxtParser.parse(content));
+      setViewArchived(true);
+    }
+
     if (!visible) {
       return (
         <div>
@@ -572,6 +665,63 @@ module.exports = defineWidget({
               title="Show todo.txt"
             ></button>
             <span class="todotxt-collapsed-label">Show todo.txt</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (viewArchived) {
+      return (
+        <div>
+          <style>{styles}</style>
+          <div class="todotxt-widget" tabIndex={-1}>
+            <div class="todotxt-header">
+              <strong>todo.txt Archive</strong>
+              <button
+                class="bx bx-list-ul"
+                onClick={() => setViewArchived(false)}
+                aria-label="Back to active tasks"
+                title="Active tasks"
+                style="margin-left: auto;"
+              ></button>
+              <button
+                class="bx bx-hide"
+                onClick={() => setVisible(false)}
+                aria-label="Hide"
+                title="Hide"
+              ></button>
+            </div>
+            <div class="todotxt-body">
+              {archivedTasks.length === 0 && (
+                <p class="todotxt-empty">No archived tasks.</p>
+              )}
+              {archivedTasks.map((task, i) => (
+                <div class="todotxt-task" key={i}>
+                  <span class="todotxt-done">{task.description}</span>
+                  {task.completionDate && (
+                    <span class="todotxt-date">{task.completionDate}</span>
+                  )}
+                  {task.creationDate && (
+                    <span class="todotxt-date">{task.creationDate}</span>
+                  )}
+                  <button
+                    class="bx bx-archive-out todotxt-archive-btn"
+                    aria-label="Unarchive"
+                    title="Unarchive"
+                    onClick={() => unarchiveTask(i)}
+                  />
+                  <button
+                    class="bx bx-x todotxt-del"
+                    aria-label="Delete archived task"
+                    title="Delete"
+                    onClick={() => deleteArchivedTask(i)}
+                  />
+                </div>
+              ))}
+            </div>
+            <div class="todotxt-footer">
+              <span>{archivedTasks.length} archived</span>
+            </div>
           </div>
         </div>
       );
@@ -790,6 +940,18 @@ module.exports = defineWidget({
                   {task.creationDate && (
                     <span class="todotxt-date">{task.creationDate}</span>
                   )}
+                  {task.completed && (
+                    <button
+                      class="bx bx-archive-in todotxt-archive-btn"
+                      aria-label="Archive task"
+                      title="Archive"
+                      onClick={() => {
+                        const idx = findRealIdx(task);
+                        if (idx === -1) return;
+                        archiveTask(idx);
+                      }}
+                    />
+                  )}
                   <button
                     class="bx bx-x todotxt-del"
                     aria-label="Delete task"
@@ -813,6 +975,18 @@ module.exports = defineWidget({
                   ({filteredCount})
                 </span>
               )}
+              {tasks.some(t => t.completed) && (
+                <>
+                  <span style="margin:0 5px">·</span>
+                  <span class="todotxt-footer-link" onClick={archiveAllCompleted}>
+                    Archive all
+                  </span>
+                </>
+              )}
+              <span style="margin:0 5px">·</span>
+              <span class="todotxt-footer-link" onClick={loadAndViewArchived}>
+                Archived
+              </span>
             </span>
             <select
               value={sortKey}

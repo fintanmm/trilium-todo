@@ -1,10 +1,13 @@
 module.exports = {
   STORE_LABEL: 'todotxtStore',
+  ARCHIVE_LABEL: 'todotxtArchive',
   SAVE_DELAY: 500,
 
   _noteId: null,
+  _archiveNoteId: null,
   _saveTimer: null,
   _listeners: [],
+  _archiveAppendPromise: Promise.resolve(),
 
   onChange(fn) {
     this._listeners.push(fn);
@@ -27,8 +30,19 @@ module.exports = {
     return null;
   },
 
+  async _resolveArchiveNote() {
+    if (this._archiveNoteId) return this._archiveNoteId;
+    const results = await api.searchForNotes(`#${this.ARCHIVE_LABEL}`);
+    if (results && results.length > 0) {
+      this._archiveNoteId = results[0].noteId;
+      return this._archiveNoteId;
+    }
+    return null;
+  },
+
   invalidateCache() {
     this._noteId = null;
+    this._archiveNoteId = null;
   },
 
   async load() {
@@ -40,6 +54,19 @@ module.exports = {
       return content || '';
     } catch (e) {
       console.error('todoStore.load error:', e);
+      return '';
+    }
+  },
+
+  async loadArchive() {
+    const noteId = await this._resolveArchiveNote();
+    if (!noteId) return '';
+    try {
+      const note = await api.getNote(noteId);
+      const { content } = await note.getNoteComplement();
+      return content || '';
+    } catch (e) {
+      console.error('todoStore.loadArchive error:', e);
       return '';
     }
   },
@@ -84,6 +111,56 @@ module.exports = {
     } catch (e) {
       console.error('todoStore.save error:', e);
     }
+  },
+
+  async saveArchive(content) {
+    try {
+      let noteId = await this._resolveArchiveNote();
+      if (!noteId) {
+        const newId = await api.runOnBackend(
+          ({ label, content }) => {
+            const { note } = api.createTextNote('root', 'todo.txt (archive)', content);
+            note.setLabel(label);
+            return note.noteId;
+          },
+          [{ label: this.ARCHIVE_LABEL, content }]
+        );
+        this._archiveNoteId = newId;
+      } else {
+        try {
+          await api.runOnBackend(
+            ({ noteId, content }) => {
+              const note = api.getNote(noteId);
+              note.setContent(content);
+            },
+            [{ noteId, content }]
+          );
+        } catch (e) {
+          console.error('todoStore.saveArchive: putContent failed, recreating note:', e);
+          this._archiveNoteId = null;
+          const newId = await api.runOnBackend(
+            ({ label, content }) => {
+              const { note } = api.createTextNote('root', 'todo.txt (archive)', content);
+              note.setLabel(label);
+              return note.noteId;
+            },
+            [{ label: this.ARCHIVE_LABEL, content }]
+          );
+          this._archiveNoteId = newId;
+        }
+      }
+    } catch (e) {
+      console.error('todoStore.saveArchive error:', e);
+    }
+  },
+
+  async appendToArchive(line) {
+    this._archiveAppendPromise = this._archiveAppendPromise.then(async () => {
+      let content = await this.loadArchive();
+      const toAppend = content ? '\n' + line : line;
+      await this.saveArchive(content + toAppend);
+    });
+    return this._archiveAppendPromise;
   },
 
   saveDebounced(content) {
