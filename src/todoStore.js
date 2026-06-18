@@ -154,12 +154,19 @@ module.exports = {
     }
   },
 
-  async appendToArchive(line) {
-    this._archiveAppendPromise = this._archiveAppendPromise.then(async () => {
-      let content = await this.loadArchive();
-      const toAppend = content ? '\n' + line : line;
-      await this.saveArchive(content + toAppend);
-    });
+  async appendToArchive(text) {
+    this._archiveAppendPromise = this._archiveAppendPromise
+      .then(async () => {
+        const content = await this.loadArchive();
+        const existingTasks = content ? todoTxtParser.parse(content) : [];
+        const newTasks = todoTxtParser.parse(text);
+        await this.saveArchive(
+          todoTxtParser.serialize([...existingTasks, ...newTasks])
+        );
+      })
+      .catch((e) =>
+        console.error("todoStore.appendToArchive error:", e)
+      );
     return this._archiveAppendPromise;
   },
 
