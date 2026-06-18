@@ -73,25 +73,51 @@ const styles = `
 .todotxt-search {
   margin-bottom: 6px;
 }
-.todotxt-search input {
+.todotxt-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.todotxt-search-wrap input {
   width: 100%;
   box-sizing: border-box;
   background: var(--input-background-color);
   color: var(--input-text-color);
   border: 1.5px solid var(--main-border-color);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 6px 28px 6px 10px;
   font-size: 0.82em;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.todotxt-search input:focus {
+.todotxt-search-wrap input:focus {
   border-color: var(--active-item-background-color);
   box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.15);
 }
-.todotxt-search input::placeholder {
+.todotxt-search-wrap input::placeholder {
   color: var(--muted-text-color);
   opacity: 0.7;
+}
+.todotxt-search-clear {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted-text-color);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 50%;
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.todotxt-search-clear:hover {
+  opacity: 1;
+  color: var(--main-text-color);
+  background: var(--accented-background-color);
 }
 
 /* ── Filter pills ── */
@@ -188,12 +214,37 @@ const styles = `
 
 /* ── Checkbox ── */
 .todotxt-task input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
   margin-top: 3px;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: var(--primary-button-background-color);
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
+  border: 2px solid var(--main-border-color);
+  border-radius: 4px;
+  background: var(--input-background-color);
+  position: relative;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.15s;
+}
+.todotxt-task input[type="checkbox"]:hover {
+  border-color: var(--active-item-background-color);
+  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.1);
+}
+.todotxt-task input[type="checkbox"]:checked {
+  border-color: var(--primary-button-background-color);
+  background: var(--primary-button-background-color);
+}
+.todotxt-task input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--primary-button-text-color, #fff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* ── Priority badge ── */
@@ -766,20 +817,35 @@ module.exports = defineWidget({
           </div>
 
           <div class="todotxt-search">
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search…"
-              value={searchQuery}
-              onInput={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  setSearchQuery("");
-                  e.target.blur();
-                }
-              }}
-            />
+            <div class="todotxt-search-wrap">
+              <input
+                ref={searchRef}
+                type="text"
+                placeholder="Search…"
+                value={searchQuery}
+                onInput={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setSearchQuery("");
+                    e.target.blur();
+                  }
+                }}
+              />
+              {searchQuery !== "" && (
+                <button
+                  class="todotxt-search-clear"
+                  aria-label="Clear search"
+                  title="Clear search"
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchRef.current?.focus();
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           {(allContexts.length > 0 ||
