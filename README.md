@@ -37,8 +37,8 @@ Create the following notes in Trilium:
 | `TodoTXT Widget`                  | JS frontend (JSX) | `#widget`, `#run=frontendStartup`, `#codeMime=text/x-trilium-jsx` | `src/todoWidget.jsx`     |
 | `todoTxtParser` (child of widget) | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoTxtParser.js`   |
 | `todoStore` (child of widget)     | JS frontend       | `#codeMime=application/javascript;env=frontend`                   | `src/todoStore.js`       |
-| `todo.txt`                        | Text              | `#todotxtStore`                                                   | (empty, will hold tasks) |
-| `todo.txt (archive)`              | Text              | `#todotxtArchive`                                                 | (empty)                  |
+| `todo.txt`                        | Code (`text/plain`) | `#todotxtStore`                                                  | (empty, will hold tasks) |
+| `todo.txt (archive)`              | Code (`text/plain`) | `#todotxtArchive`                                                | (empty)                  |
 
 The resulting note tree must look like this (bundle child notes as direct children of the widget):
 
@@ -48,8 +48,8 @@ Trilium todo.txt (text folder)
     ├── todoTxtParser (code JS, #codeMime=application/javascript;env=frontend)
     └── todoStore (code JS, #codeMime=application/javascript;env=frontend)
 
-todo.txt (text, #todotxtStore — anywhere in the tree)
-todo.txt (archive) (text, #todotxtArchive — anywhere in the tree)
+todo.txt (code, text/plain, #todotxtStore — anywhere in the tree)
+todo.txt (archive) (code, text/plain, #todotxtArchive — anywhere in the tree)
 ```
 
 After creating the notes, reload Trilium.

@@ -136,7 +136,7 @@ function parseLine(line) {
     rest = rest.slice(completedMatch[0].length);
   }
 
-  const prioMatch = rest.match(/^\(([A-Z])\)\s+/);
+  const prioMatch = rest.match(/^\(([A-Z])\)\s*/);
   if (prioMatch) {
     task.priority = prioMatch[1];
     rest = rest.slice(prioMatch[0].length);

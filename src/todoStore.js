@@ -77,7 +77,13 @@ module.exports = {
       if (!noteId) {
         const newId = await api.runOnBackend(
           ({ label, content }) => {
-            const { note } = api.createTextNote('root', 'todo.txt', content);
+            const { note } = api.createNewNote({
+              parentNoteId: 'root',
+              title: 'todo.txt',
+              type: 'code',
+              mime: 'text/plain',
+              content
+            });
             note.setLabel(label);
             return note.noteId;
           },
@@ -98,7 +104,13 @@ module.exports = {
           this._noteId = null;
           const newId = await api.runOnBackend(
             ({ label, content }) => {
-              const { note } = api.createTextNote('root', 'todo.txt', content);
+              const { note } = api.createNewNote({
+                parentNoteId: 'root',
+                title: 'todo.txt',
+                type: 'code',
+                mime: 'text/plain',
+                content
+              });
               note.setLabel(label);
               return note.noteId;
             },
@@ -119,7 +131,13 @@ module.exports = {
       if (!noteId) {
         const newId = await api.runOnBackend(
           ({ label, content }) => {
-            const { note } = api.createTextNote('root', 'todo.txt (archive)', content);
+            const { note } = api.createNewNote({
+              parentNoteId: 'root',
+              title: 'todo.txt (archive)',
+              type: 'code',
+              mime: 'text/plain',
+              content
+            });
             note.setLabel(label);
             return note.noteId;
           },
@@ -140,7 +158,13 @@ module.exports = {
           this._archiveNoteId = null;
           const newId = await api.runOnBackend(
             ({ label, content }) => {
-              const { note } = api.createTextNote('root', 'todo.txt (archive)', content);
+              const { note } = api.createNewNote({
+                parentNoteId: 'root',
+                title: 'todo.txt (archive)',
+                type: 'code',
+                mime: 'text/plain',
+                content
+              });
               note.setLabel(label);
               return note.noteId;
             },

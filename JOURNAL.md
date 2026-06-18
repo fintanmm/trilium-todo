@@ -147,3 +147,29 @@
   - **Archive view** — shows archived tasks with **Unarchive** (↩️) and **Delete** (✕) options.
   - `unarchiveTask()` moves the task back to the active note (sets `completed=false`).
 - Updated `README.md`, `PLAN.md`, `install.js` to document the archive backing note.
+
+## 2026-06-18 — Fix: `@` context symbol conflict with CKEditor mentions
+
+- **Problem**: Trilium's CKEditor converts `@text` into a note mention link (`<a class="ck-link">`), which would corrupt `@context` strings in todo.txt if a user opened the backing note in Trilium's text editor.
+- **Solution**: Changed backing notes (`#todotxtStore`, `#todotxtArchive`) from `type: "text"` to `type: "code"` with `mime: "text/plain"`. Code notes use CodeMirror (no CKEditor), so `@` is never interpreted. The widget's programmatic read/write path (`getNoteComplement()`/`setContent()`) works identically for both types.
+- **Updated**:
+  - `install.js`: Creates backing notes as `type: "code"` with `mime: "text/plain"`
+  - `src/todoStore.js`: Auto-creation fallback uses `api.createNewNote()` instead of `api.createTextNote()`, passing `type: "code"` and `mime: "text/plain"`
+  - `README.md`, `PLAN.md`: Updated note type documentation
+- Commit: *(pending)*
+
+## 2026-06-18 — Fix: Lenient priority parsing (allow `(A)task` without space)
+
+- **Problem**: The priority regex `/^\(([A-Z])\)\s+/` required one or more spaces after the closing `)`, so `(A)my todo` was not recognized as having priority `A` — the entire string was treated as a description.
+- **Fix**: Changed `\s+` to `\s*` in `src/todoTxtParser.js:139` so `(A)task` and `(A) task` are both parsed correctly. Serialization (`serializeTask`) already emits the canonical `(A) desc` format via `parts.join(' ')`.
+
+## 2026-06-18 — Feature: Inline due date picker
+
+- Added inline `<input type="date">` editing for `due:YYYY-MM-DD` key-values in each task row.
+- **UX**: Click an existing `due:date` tag → it turns into a date picker; pick a date → saved immediately. Tasks without a due date show a faded `+due` clickable to add one. Clearing the date input removes the `due:` key-value.
+- **Implementation** (`src/todoWidget.jsx`):
+  - Added `editingDueIdx` state + `editDueRef` to track which task's due date is being edited.
+  - `commitDue()` updates `task.keyValues.due` or removes it if cleared.
+  - Renders three states per row: date input (editing), clickable `due:date` tag (set), faded `+due` (unset).
+  - Auto-focuses the date picker when entering edit mode.
+  - `<input type="date">` uses the `.todotxt-edit-input` class, consistent with the description inline editor.

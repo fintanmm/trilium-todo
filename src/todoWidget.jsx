@@ -460,6 +460,7 @@ module.exports = defineWidget({
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(null);
     const [editingIdx, setEditingIdx] = useState(null);
+    const [editingDueIdx, setEditingDueIdx] = useState(null);
     const [viewArchived, setViewArchived] = useState(false);
     const [archivedTasks, setArchivedTasks] = useState([]);
 
@@ -480,6 +481,7 @@ module.exports = defineWidget({
       editingRef.current = editingIdx;
     }, [editingIdx]);
     const editRef = useRef(null);
+    const editDueRef = useRef(null);
     const searchRef = useRef(null);
 
     useEffect(() => {
@@ -536,6 +538,12 @@ module.exports = defineWidget({
       }
     }, [editingIdx]);
 
+    useEffect(() => {
+      if (editingDueIdx !== null && editDueRef.current) {
+        editDueRef.current.focus();
+      }
+    }, [editingDueIdx]);
+
     const saveTasks = (updater) => {
       setTasks((prev) => {
         const next = updater(prev);
@@ -558,6 +566,25 @@ module.exports = defineWidget({
         next[idx] = todoTxtParser.updateTask(next[idx], {
           description: newDesc.trim(),
         });
+        return next;
+      });
+    }
+
+    function commitDue(task, newDate) {
+      const idx = findRealIdx(task);
+      if (idx === -1) return;
+      setEditingDueIdx(null);
+      const oldDate = task.keyValues.due || null;
+      if (newDate === oldDate) return;
+      saveTasks((prev) => {
+        const next = [...prev];
+        const updated = { ...next[idx], keyValues: { ...next[idx].keyValues } };
+        if (newDate) {
+          updated.keyValues.due = newDate;
+        } else {
+          delete updated.keyValues.due;
+        }
+        next[idx] = updated;
         return next;
       });
     }
@@ -915,8 +942,51 @@ module.exports = defineWidget({
                       +{p}
                     </span>
                   ))}
+                  {editingDueIdx === realIdx ? (
+                    <input
+                      class="todotxt-edit-input"
+                      type="date"
+                      ref={editDueRef}
+                      defaultValue={task.keyValues.due || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        commitDue(task, val || null);
+                      }}
+                      onBlur={() => setEditingDueIdx(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          setEditingDueIdx(null);
+                        }
+                      }}
+                    />
+                  ) : task.keyValues.due ? (
+                    <span
+                      class="todotxt-kv due"
+                      onClick={() => setEditingDueIdx(realIdx)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setEditingDueIdx(realIdx);
+                      }}
+                    >
+                      due:{task.keyValues.due}
+                    </span>
+                  ) : (
+                    <span
+                      class="todotxt-kv"
+                      onClick={() => setEditingDueIdx(realIdx)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setEditingDueIdx(realIdx);
+                      }}
+                      style="cursor:pointer;opacity:0.3;font-size:0.75em"
+                    >
+                      +due
+                    </span>
+                  )}
                   {Object.entries(task.keyValues)
-                    .filter(([k]) => k !== "pri")
+                    .filter(([k]) => k !== "pri" && k !== "due")
                     .map(([k, v]) => (
                       <span class={{ "todotxt-kv": true, [k]: true }}>
                         {k}:{v}

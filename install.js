@@ -225,7 +225,8 @@ async function run() {
     const result = await api("POST", "notes", {
       parentNoteId: "root",
       title: "todo.txt",
-      type: "text",
+      type: "code",
+      mime: "text/plain",
       content: "",
       attributes: [{ type: "label", name: "todotxtStore" }],
     });
@@ -243,7 +244,8 @@ async function run() {
     const result = await api("POST", "notes", {
       parentNoteId: "root",
       title: "todo.txt (archive)",
-      type: "text",
+      type: "code",
+      mime: "text/plain",
       content: "",
       attributes: [{ type: "label", name: "todotxtArchive" }],
     });

@@ -16,8 +16,8 @@ A **Preact widget** (`trilium:preact`) mounted in the **right-pane** that reads/
               └── 📄 todoStore      (code JS, #codeMime=application/javascript;env=frontend — parsed as global `todoStore`)
 
 Backing storage:
-📄 todo.txt                   (text, #todotxtStore — located at root level)
-📄 todo.txt (archive)         (text, #todotxtArchive — located at root level)
+📄 todo.txt                   (code, text/plain, #todotxtStore — located at root level)
+📄 todo.txt (archive)         (code, text/plain, #todotxtArchive — located at root level)
 ```
 
 > **Important**: Bundle child notes (`todoTxtParser`, `todoStore`) must be **direct children** of the widget note, not siblings. Trilium evaluates child notes first and exposes their `module.exports` as globals named after the note title (spaces stripped).
@@ -30,6 +30,8 @@ Backing storage:
 4. **Write** — On any change (add/complete/edit), serialize back to todo.txt format and save to note via `api.runOnBackend` with `note.setContent()`.
 5. **Archive** — Completed tasks can be archived to a separate `#todotxtArchive` note. Archiving removes the task from the active note and appends it to the archive. Archive view supports unarchive and permanent delete.
 6. **Reactivity** — Re-render only the affected parts.
+
+> **`@` symbol**: Backing notes use `type: "code"` with `mime: "text/plain"` instead of `type: "text"`. This prevents Trilium's CKEditor from interpreting `@context` as a note mention link, since code notes open in CodeMirror (plain text) rather than CKEditor. The widget reads/writes content programmatically via `getNoteComplement()`/`setContent()`, which works identically for both note types.
 
 ## Widget UI Layout
 
