@@ -31,16 +31,11 @@ const styles = `
   opacity: 0.85;
 }
 .todotxt-header button {
-  background: none;
-  border: none;
   color: var(--muted-text-color);
-  cursor: pointer;
   padding: 3px 8px;
-  border-radius: 4px;
   transition: all 0.15s;
 }
 .todotxt-header button:hover {
-  background: var(--accented-background-color);
   color: var(--main-text-color);
 }
 
@@ -51,22 +46,7 @@ const styles = `
 .todotxt-add input {
   width: 100%;
   box-sizing: border-box;
-  background: var(--input-background-color);
-  color: var(--input-text-color);
-  border: 1.5px solid var(--main-border-color);
-  border-radius: 6px;
   padding: 7px 10px;
-  font-size: 0.85em;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.todotxt-add input:focus {
-  border-color: var(--active-item-background-color);
-  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.15);
-}
-.todotxt-add input::placeholder {
-  color: var(--muted-text-color);
-  opacity: 0.7;
 }
 
 /* ── Search input ── */
@@ -81,36 +61,14 @@ const styles = `
 .todotxt-search-wrap input {
   width: 100%;
   box-sizing: border-box;
-  background: var(--input-background-color);
-  color: var(--input-text-color);
-  border: 1.5px solid var(--main-border-color);
-  border-radius: 6px;
   padding: 6px 28px 6px 10px;
-  font-size: 0.82em;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.todotxt-search-wrap input:focus {
-  border-color: var(--active-item-background-color);
-  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.15);
-}
-.todotxt-search-wrap input::placeholder {
-  color: var(--muted-text-color);
-  opacity: 0.7;
 }
 .todotxt-search-clear {
   position: absolute;
   right: 5px;
   top: 50%;
   transform: translateY(-50%);
-  background: none;
-  border: none;
   color: var(--muted-text-color);
-  cursor: pointer;
-  padding: 2px 5px;
-  border-radius: 50%;
-  font-size: 0.85em;
-  line-height: 1;
   opacity: 0.5;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
@@ -214,37 +172,15 @@ const styles = `
 
 /* ── Checkbox ── */
 .todotxt-task input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  margin-top: 3px;
+  width: 15px;
+  height: 15px;
+}
+.todotxt-task label.tn-checkbox {
   flex-shrink: 0;
+  width: 1em;
+  height: 1.15em;
+  padding: 0 !important;
   cursor: pointer;
-  width: 17px;
-  height: 17px;
-  border: 2px solid var(--main-border-color);
-  border-radius: 4px;
-  background: var(--input-background-color);
-  position: relative;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.15s;
-}
-.todotxt-task input[type="checkbox"]:hover {
-  border-color: var(--active-item-background-color);
-  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.1);
-}
-.todotxt-task input[type="checkbox"]:checked {
-  border-color: var(--primary-button-background-color);
-  background: var(--primary-button-background-color);
-}
-.todotxt-task input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border: solid var(--primary-button-text-color, #fff);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
 }
 
 /* ── Priority badge ── */
@@ -362,16 +298,12 @@ const styles = `
 
 /* ── Delete button ── */
 .todotxt-del {
-  background: none;
-  border: none;
   color: var(--muted-text-color);
-  cursor: pointer;
   padding: 1px 4px;
   font-size: 1.1em;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, transform 0.15s;
   flex-shrink: 0;
-  border-radius: 4px;
   line-height: 1;
 }
 .todotxt-del:focus-visible {
@@ -399,18 +331,7 @@ const styles = `
   color: var(--muted-text-color);
 }
 .todotxt-footer select {
-  background: var(--input-background-color);
-  color: var(--input-text-color);
-  border: 1px solid var(--main-border-color);
-  border-radius: 5px;
-  padding: 3px 6px;
   font-size: 0.82em;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.todotxt-footer select:focus {
-  border-color: var(--active-item-background-color);
 }
 
 /* ── Collapsed state ── */
@@ -456,16 +377,12 @@ const styles = `
 
 /* ── Archive button ── */
 .todotxt-archive-btn {
-  background: none;
-  border: none;
   color: var(--muted-text-color);
-  cursor: pointer;
   padding: 1px 4px;
   font-size: 1em;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s, transform 0.15s;
   flex-shrink: 0;
-  border-radius: 4px;
   line-height: 1;
 }
 .todotxt-archive-btn:focus-visible {
@@ -729,14 +646,14 @@ module.exports = defineWidget({
             <div class="todotxt-header">
               <strong>todo.txt Archive</strong>
               <button
-                class="bx bx-list-ul"
+                class="bx bx-list-ul tn-low-profile"
                 onClick={() => setViewArchived(false)}
                 aria-label="Back to active tasks"
                 title="Active tasks"
                 style="margin-left: auto;"
               ></button>
               <button
-                class="bx bx-hide"
+                class="bx bx-hide tn-low-profile"
                 onClick={() => setVisible(false)}
                 aria-label="Hide"
                 title="Hide"
@@ -756,13 +673,13 @@ module.exports = defineWidget({
                     <span class="todotxt-date">{task.creationDate}</span>
                   )}
                   <button
-                    class="bx bx-archive-out todotxt-archive-btn"
+                    class="bx bx-archive-out tn-low-profile todotxt-archive-btn"
                     aria-label="Unarchive"
                     title="Unarchive"
                     onClick={() => unarchiveTask(i)}
                   />
                   <button
-                    class="bx bx-x todotxt-del"
+                    class="bx bx-x tn-low-profile todotxt-del"
                     aria-label="Delete archived task"
                     title="Delete"
                     onClick={() => deleteArchivedTask(i)}
@@ -794,7 +711,7 @@ module.exports = defineWidget({
           <div class="todotxt-header">
             <strong>todo.txt</strong>
             <button
-              class="bx bx-hide"
+              class="bx bx-hide tn-low-profile"
               onClick={() => setVisible(false)}
               aria-label="Hide"
               title="Hide"
@@ -834,7 +751,7 @@ module.exports = defineWidget({
               />
               {searchQuery !== "" && (
                 <button
-                  class="todotxt-search-clear"
+                  class="tn-low-profile todotxt-search-clear"
                   aria-label="Clear search"
                   title="Clear search"
                   onClick={() => {
@@ -941,19 +858,21 @@ module.exports = defineWidget({
                   class={{ "todotxt-task": true, completed: task.completed }}
                   key={realIdx}
                 >
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onClick={() => {
-                      const idx = findRealIdx(task);
-                      if (idx === -1) return;
-                      saveTasks((prev) => {
-                        const next = [...prev];
-                        next[idx] = todoTxtParser.toggleComplete(next[idx]);
-                        return next;
-                      });
-                    }}
-                  />
+                  <label class="tn-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onClick={() => {
+                        const idx = findRealIdx(task);
+                        if (idx === -1) return;
+                        saveTasks((prev) => {
+                          const next = [...prev];
+                          next[idx] = todoTxtParser.toggleComplete(next[idx]);
+                          return next;
+                        });
+                      }}
+                    />
+                  </label>
                   {task.priority && !task.completed && (
                     <span class="todotxt-prio" data-prio={task.priority}>
                       {task.priority}
@@ -1008,7 +927,7 @@ module.exports = defineWidget({
                   )}
                   {task.completed && (
                     <button
-                      class="bx bx-archive-in todotxt-archive-btn"
+                      class="bx bx-archive-in tn-low-profile todotxt-archive-btn"
                       aria-label="Archive task"
                       title="Archive"
                       onClick={() => {
@@ -1019,7 +938,7 @@ module.exports = defineWidget({
                     />
                   )}
                   <button
-                    class="bx bx-x todotxt-del"
+                    class="bx bx-x tn-low-profile todotxt-del"
                     aria-label="Delete task"
                     title="Delete"
                     onClick={() => {
