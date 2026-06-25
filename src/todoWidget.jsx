@@ -417,16 +417,16 @@ const styles = `
 }
 `;
 
-function sortDisplayed(tasks, sortKey, filter, searchQuery) {
+function sortDisplayed(tasks, sortKey, filters, searchQuery) {
   let result = [...tasks];
 
-  if (filter) {
-    if (filter.type === "context") {
-      result = todoTxtParser.filter.byContext(result, filter.value);
-    } else if (filter.type === "project") {
-      result = todoTxtParser.filter.byProject(result, filter.value);
-    } else if (filter.type === "priority") {
-      result = todoTxtParser.filter.byPriority(result, filter.value);
+  for (const f of filters) {
+    if (f.type === "context") {
+      result = todoTxtParser.filter.byContext(result, f.value);
+    } else if (f.type === "project") {
+      result = todoTxtParser.filter.byProject(result, f.value);
+    } else if (f.type === "priority") {
+      result = todoTxtParser.filter.byPriority(result, f.value);
     }
   }
 
@@ -454,7 +454,7 @@ module.exports = defineWidget({
     const [visible, setVisible] = useState(
       () => localStorage.getItem("todotxt-visible") !== "false",
     );
-    const [filter, setFilter] = useState(null);
+    const [filter, setFilter] = useState([]);
     const [sortKey, setSortKey] = useState("priority");
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
@@ -521,7 +521,7 @@ module.exports = defineWidget({
           if (searchRefState.current) {
             setSearchQuery("");
             searchRef.current?.focus();
-          } else if (filterRef.current) setFilter(null);
+          } else if (filterRef.current.length) setFilter([]);
         }
       }
       window.addEventListener("keydown", onKeyDown);
@@ -551,6 +551,14 @@ module.exports = defineWidget({
         return next;
       });
     };
+
+    function toggleFilter(type, value) {
+      setFilter((prev) => {
+        const idx = prev.findIndex((f) => f.type === type && f.value === value);
+        if (idx !== -1) return prev.filter((_, i) => i !== idx);
+        return [...prev, { type, value }];
+      });
+    }
 
     function findRealIdx(task) {
       return tasksRef.current.indexOf(task);
@@ -723,7 +731,7 @@ module.exports = defineWidget({
     }
 
     const displayed = sortDisplayed(tasks, sortKey, filter, searchQuery);
-    const hasFilter = filter !== null || searchQuery !== "";
+    const hasFilter = filter.length > 0 || searchQuery !== "";
     const allContexts = todoTxtParser.uniqueContexts(tasks);
     const allProjects = todoTxtParser.uniqueProjects(tasks);
     const prios = ["A", "B", "C", "D", "E"].filter((p) =>
@@ -799,17 +807,11 @@ module.exports = defineWidget({
               {allContexts.map((c) => (
                 <button
                   class={
-                    filter?.value === c && filter?.type === "context"
+                    filter.some((f) => f.value === c && f.type === "context")
                       ? "active"
                       : ""
                   }
-                  onClick={() =>
-                    setFilter(
-                      filter?.value === c && filter?.type === "context"
-                        ? null
-                        : { type: "context", value: c },
-                    )
-                  }
+                  onClick={() => toggleFilter("context", c)}
                 >
                   @{c}
                 </button>
@@ -817,17 +819,11 @@ module.exports = defineWidget({
               {allProjects.map((p) => (
                 <button
                   class={
-                    filter?.value === p && filter?.type === "project"
+                    filter.some((f) => f.value === p && f.type === "project")
                       ? "active"
                       : ""
                   }
-                  onClick={() =>
-                    setFilter(
-                      filter?.value === p && filter?.type === "project"
-                        ? null
-                        : { type: "project", value: p },
-                    )
-                  }
+                  onClick={() => toggleFilter("project", p)}
                 >
                   +{p}
                 </button>
@@ -835,17 +831,11 @@ module.exports = defineWidget({
               {prios.map((p) => (
                 <button
                   class={
-                    filter?.value === p && filter?.type === "priority"
+                    filter.some((f) => f.value === p && f.type === "priority")
                       ? "active"
                       : ""
                   }
-                  onClick={() =>
-                    setFilter(
-                      filter?.value === p && filter?.type === "priority"
-                        ? null
-                        : { type: "priority", value: p },
-                    )
-                  }
+                  onClick={() => toggleFilter("priority", p)}
                 >
                   {p}
                 </button>
@@ -854,7 +844,7 @@ module.exports = defineWidget({
                 <button
                   class="todotxt-clear"
                   onClick={() => {
-                    setFilter(null);
+                    setFilter([]);
                     setSearchQuery("");
                   }}
                 >
@@ -929,7 +919,7 @@ module.exports = defineWidget({
                   {task.contexts.map((c) => (
                     <span
                       class="todotxt-ctx"
-                      onClick={() => setFilter({ type: "context", value: c })}
+                      onClick={() => toggleFilter("context", c)}
                     >
                       @{c}
                     </span>
@@ -937,7 +927,7 @@ module.exports = defineWidget({
                   {task.projects.map((p) => (
                     <span
                       class="todotxt-proj"
-                      onClick={() => setFilter({ type: "project", value: p })}
+                      onClick={() => toggleFilter("project", p)}
                     >
                       +{p}
                     </span>
