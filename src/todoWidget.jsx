@@ -755,6 +755,7 @@ module.exports = defineWidget({
       tasks.some((t) => t.priority === p),
     );
     const filteredCount = displayed.length;
+    const hasDueTasks = tasks.some((t) => t.keyValues.due);
 
     return (
       <div>
@@ -817,7 +818,6 @@ module.exports = defineWidget({
             </div>
           </div>
 
-          const hasDueTasks = tasks.some((t) => t.keyValues.due);
           {(allContexts.length > 0 ||
             allProjects.length > 0 ||
             prios.length > 0 ||
