@@ -417,6 +417,12 @@ const styles = `
 }
 `;
 
+function dateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function sortDisplayed(tasks, sortKey, filters, searchQuery) {
   let result = [...tasks];
 
@@ -427,6 +433,16 @@ function sortDisplayed(tasks, sortKey, filters, searchQuery) {
       result = todoTxtParser.filter.byProject(result, f.value);
     } else if (f.type === "priority") {
       result = todoTxtParser.filter.byPriority(result, f.value);
+    } else if (f.type === "due") {
+      const today = dateOffset(0);
+      if (f.value === "today") {
+        result = result.filter((t) => t.keyValues.due === today);
+      } else if (f.value === "tomorrow") {
+        result = result.filter((t) => t.keyValues.due === dateOffset(1));
+      } else if (f.value === "next-week") {
+        const end = dateOffset(6);
+        result = result.filter((t) => t.keyValues.due && t.keyValues.due >= today && t.keyValues.due <= end);
+      }
     }
   }
 
@@ -556,6 +572,7 @@ module.exports = defineWidget({
       setFilter((prev) => {
         const idx = prev.findIndex((f) => f.type === type && f.value === value);
         if (idx !== -1) return prev.filter((_, i) => i !== idx);
+        if (type === "due") return [...prev.filter((f) => f.type !== "due"), { type, value }];
         return [...prev, { type, value }];
       });
     }
@@ -800,9 +817,11 @@ module.exports = defineWidget({
             </div>
           </div>
 
+          const hasDueTasks = tasks.some((t) => t.keyValues.due);
           {(allContexts.length > 0 ||
             allProjects.length > 0 ||
-            prios.length > 0) && (
+            prios.length > 0 ||
+            hasDueTasks) && (
             <div class="todotxt-filters">
               {allContexts.map((c) => (
                 <button
@@ -840,6 +859,23 @@ module.exports = defineWidget({
                   {p}
                 </button>
               ))}
+              {hasDueTasks && (
+                <>
+                  <span style="width:1px;background:var(--main-border-color);margin:2px 4px" />
+                  {["today", "tomorrow", "next-week"].map((range) => (
+                    <button
+                      class={
+                        filter.some((f) => f.type === "due" && f.value === range)
+                          ? "active"
+                          : ""
+                      }
+                      onClick={() => toggleFilter("due", range)}
+                    >
+                      {range === "next-week" ? "Next 7 days" : range.charAt(0).toUpperCase() + range.slice(1)}
+                    </button>
+                  ))}
+                </>
+              )}
               {hasFilter && (
                 <button
                   class="todotxt-clear"
