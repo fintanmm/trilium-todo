@@ -442,6 +442,8 @@ function sortDisplayed(tasks, sortKey, filters, searchQuery) {
       } else if (f.value === "next-week") {
         const end = dateOffset(6);
         result = result.filter((t) => t.keyValues.due && t.keyValues.due >= today && t.keyValues.due <= end);
+      } else if (f.value === "overdue") {
+        result = result.filter((t) => t.keyValues.due && t.keyValues.due < today);
       }
     }
   }
@@ -862,7 +864,7 @@ module.exports = defineWidget({
               {hasDueTasks && (
                 <>
                   <span style="width:1px;background:var(--main-border-color);margin:2px 4px" />
-                  {["today", "tomorrow", "next-week"].map((range) => (
+                  {["today", "tomorrow", "next-week", "overdue"].map((range) => (
                     <button
                       class={
                         filter.some((f) => f.type === "due" && f.value === range)
