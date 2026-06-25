@@ -933,22 +933,31 @@ module.exports = defineWidget({
                     </span>
                   ))}
                   {editingDueIdx === realIdx ? (
-                    <input
-                      class="todotxt-edit-input"
-                      type="date"
-                      ref={editDueRef}
-                      defaultValue={task.keyValues.due || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        commitDue(task, val || null);
-                      }}
-                      onBlur={() => setEditingDueIdx(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") {
-                          setEditingDueIdx(null);
-                        }
-                      }}
-                    />
+                    <span style="display:inline-flex;align-items:center;gap:3px">
+                      <input
+                        class="todotxt-edit-input"
+                        type="date"
+                        ref={editDueRef}
+                        defaultValue={task.keyValues.due || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          commitDue(task, val || null);
+                        }}
+                        onBlur={() => setEditingDueIdx(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setEditingDueIdx(null);
+                          }
+                        }}
+                        style="width:135px"
+                      />
+                      <span
+                        class="bx bx-calendar tn-low-profile"
+                        onClick={() => editDueRef.current?.showPicker()}
+                        aria-label="Pick date"
+                        title="Pick date"
+                      />
+                    </span>
                   ) : task.keyValues.due ? (
                     <span
                       class="todotxt-kv due"
