@@ -574,7 +574,7 @@ module.exports = defineWidget({
       if (dueTodayTasks.length > 0 && !notifiedDueToday.current) {
         notifiedDueToday.current = true;
         const msg = `${dueTodayTasks.length} task${dueTodayTasks.length > 1 ? 's' : ''} due today`;
-        api.showNotification(msg);
+        api.showMessage(msg);
       }
     }, [tasks, loading]);
 
