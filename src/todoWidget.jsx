@@ -501,6 +501,7 @@ module.exports = defineWidget({
     const editRef = useRef(null);
     const editDueRef = useRef(null);
     const searchRef = useRef(null);
+    const notifiedDueToday = useRef(false);
 
     useEffect(() => {
       localStorage.setItem("todotxt-visible", visible);
@@ -561,6 +562,21 @@ module.exports = defineWidget({
         editDueRef.current.focus();
       }
     }, [editingDueIdx]);
+
+    useEffect(() => {
+      if (loading || tasks.length === 0) return;
+
+      const today = dateOffset(0);
+      const dueTodayTasks = tasks.filter(
+        t => !t.completed && t.keyValues.due === today
+      );
+
+      if (dueTodayTasks.length > 0 && !notifiedDueToday.current) {
+        notifiedDueToday.current = true;
+        const msg = `${dueTodayTasks.length} task${dueTodayTasks.length > 1 ? 's' : ''} due today`;
+        api.showNotification(msg);
+      }
+    }, [tasks, loading]);
 
     const saveTasks = (updater) => {
       setTasks((prev) => {
