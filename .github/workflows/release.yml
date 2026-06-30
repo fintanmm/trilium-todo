@@ -5,13 +5,15 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: npm run build
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/trilium-todo.zip
-          generate_release_notes: true
+      - run: gh release create "$GITHUB_REF_NAME" dist/trilium-todo.zip --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
