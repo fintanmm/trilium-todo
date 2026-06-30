@@ -4,6 +4,6 @@
   "private": true,
   "description": "Trilium todo.txt Plugin",
   "scripts": {
-    "build": "mkdir -p dist && cd src && zip -r ../dist/trilium-todo.zip . && cd .. && zip -j dist/trilium-todo.zip install.js README.md"
+    "build": "mkdir -p dist && cd src && zip -r ../dist/trilium-todo.zip . && cd .. && zip -j dist/trilium-todo.zip install.js README.md CHANGELOG.md"
   }
 }
