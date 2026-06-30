@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] — 2026-06-30
+
+### Changed
+- Modern & clean visual refresh:
+  - Card-style task rows with border + shadow on hover
+  - Circular animated checkboxes
+  - Pill-shaped priority/context/project tags with tinted backgrounds
+  - Due date urgency cues (overdue glow, today orange)
+  - Rounded search bar with search icon
+  - Styled footer select and buttons
+
 ## [0.3.0] — 2026-06-30
 
 ### Added
