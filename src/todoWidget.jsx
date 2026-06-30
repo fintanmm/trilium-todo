@@ -641,7 +641,7 @@ module.exports = defineWidget({
         next.splice(idx, 1);
         return next;
       });
-      todoStore.appendToArchive(line);
+      todoStore.appendToArchive(line, todoTxtParser);
     }
 
     function archiveAllCompleted() {
@@ -649,7 +649,7 @@ module.exports = defineWidget({
       if (completed.length === 0) return;
       const lines = todoTxtParser.serialize(completed);
       saveTasks((prev) => prev.filter((t) => !t.completed));
-      todoStore.appendToArchive(lines);
+      todoStore.appendToArchive(lines, todoTxtParser);
     }
 
     async function unarchiveTask(idx) {

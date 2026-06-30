@@ -178,14 +178,14 @@ module.exports = {
     }
   },
 
-  async appendToArchive(text) {
+  async appendToArchive(text, parser) {
     this._archiveAppendPromise = this._archiveAppendPromise
       .then(async () => {
         const content = await this.loadArchive();
-        const existingTasks = content ? todoTxtParser.parse(content) : [];
-        const newTasks = todoTxtParser.parse(text);
+        const existingTasks = content ? parser.parse(content) : [];
+        const newTasks = parser.parse(text);
         await this.saveArchive(
-          todoTxtParser.serialize([...existingTasks, ...newTasks])
+          parser.serialize([...existingTasks, ...newTasks])
         );
       })
       .catch((e) =>
