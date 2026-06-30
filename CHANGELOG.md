@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.0] — 2026-06-30
+
+### Added
+- Task stats in footer — shows "X done today" and consecutive day streak when tasks are completed daily
+
 ## [0.5.0] — 2026-06-30
 
 ### Added

@@ -986,6 +986,23 @@ module.exports = defineWidget({
     const filteredCount = displayed.length;
     const hasDueTasks = tasks.some((t) => t.keyValues.due);
 
+    const todayStats = dateOffset(0);
+    const completedDates = new Set(
+      tasks.filter(t => t.completed && t.completionDate).map(t => t.completionDate)
+    );
+    const doneToday = tasks.filter(t => t.completed && t.completionDate === todayStats).length;
+    let streak = 0;
+    if (completedDates.has(todayStats)) {
+      streak = 1;
+      const d = new Date();
+      while (true) {
+        d.setDate(d.getDate() - 1);
+        const ds = d.toISOString().slice(0, 10);
+        if (completedDates.has(ds)) streak++;
+        else break;
+      }
+    }
+
     return (
       <div>
         <style>{styles}</style>
@@ -1300,6 +1317,13 @@ module.exports = defineWidget({
               {hasFilter && (
                 <span style="margin-left:4px;color:var(--primary-button-background-color)">
                   ({filteredCount})
+                </span>
+              )}
+              {(doneToday > 0 || streak > 1) && (
+                <span style="margin-left:5px;opacity:0.6;font-size:0.92em">
+                  {doneToday > 0 && <>{doneToday} done today</>}
+                  {doneToday > 0 && streak > 1 && <>, </>}
+                  {streak > 1 && <>{streak}-day streak</>}
                 </span>
               )}
               {tasks.some(t => t.completed) && (
