@@ -660,7 +660,9 @@ module.exports = defineWidget({
           return;
         }
 
-        if (!inInput) {
+        const inWidget = e.target.closest(".todotxt-widget");
+
+        if (!inInput && inWidget) {
           const displayed = displayedRef.current;
 
           if (e.key === "j" || e.key === "ArrowDown") {
@@ -741,13 +743,13 @@ module.exports = defineWidget({
           }
         }
 
-        if (e.key === "n" && !inInput) {
+        if (e.key === "n" && !inInput && inWidget) {
           e.preventDefault();
           addInputRef.current?.focus();
           return;
         }
 
-        if (e.key === "/" && !inInput) {
+        if (e.key === "/" && !inInput && inWidget) {
           e.preventDefault();
           searchRef.current?.focus();
           return;
