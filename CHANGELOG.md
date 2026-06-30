@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0] — 2026-06-30
+
+### Added
+- Recurring tasks (`rec:1d`, `rec:1w`, `rec:1m`, `rec:1y`) — completing a recurring task auto-creates the next occurrence with bumped `due:`
+- Keyboard shortcuts:
+  - `j`/`k` or Arrow keys — navigate tasks
+  - `x` — toggle complete
+  - `e` — inline edit
+  - `d` — delete task
+  - `a` — archive completed task
+  - `n` — focus add task input
+  - `/` — focus search input
+
 ## [0.4.0] — 2026-06-30
 
 ### Changed

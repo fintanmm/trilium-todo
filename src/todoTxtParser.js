@@ -75,6 +75,47 @@ module.exports = {
     return [...set].sort();
   },
 
+  processRecurrence(task) {
+    const rec = task.keyValues && task.keyValues.rec;
+    if (!rec) return null;
+
+    const match = rec.match(/^(\d+)([dwmy])$/);
+    if (!match) return null;
+
+    const amount = parseInt(match[1], 10);
+    const unit = match[2];
+
+    const newTask = {
+      raw: null,
+      completed: false,
+      priority: task.priority,
+      completionDate: null,
+      creationDate: today(),
+      description: task.description,
+      contexts: [...task.contexts],
+      projects: [...task.projects],
+      keyValues: { ...task.keyValues },
+    };
+
+    delete newTask.keyValues.pri;
+
+    if (newTask.keyValues.due) {
+      const dueDate = new Date(newTask.keyValues.due + 'T00:00:00');
+      if (isNaN(dueDate.getTime())) return null;
+
+      switch (unit) {
+        case 'd': dueDate.setDate(dueDate.getDate() + amount); break;
+        case 'w': dueDate.setDate(dueDate.getDate() + amount * 7); break;
+        case 'm': dueDate.setMonth(dueDate.getMonth() + amount); break;
+        case 'y': dueDate.setFullYear(dueDate.getFullYear() + amount); break;
+      }
+
+      newTask.keyValues.due = dueDate.toISOString().slice(0, 10);
+    }
+
+    return newTask;
+  },
+
   sort: {
     byPriority(tasks) {
       return [...tasks].sort((a, b) => {

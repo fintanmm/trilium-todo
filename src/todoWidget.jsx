@@ -204,6 +204,11 @@ const styles = `
   border-color: var(--main-border-color);
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
+.todotxt-task.focused {
+  background: var(--hover-item-background-color);
+  border-color: var(--active-item-background-color);
+  box-shadow: 0 0 0 2px rgba(67, 133, 245, 0.08);
+}
 .todotxt-task.completed {
   opacity: 0.55;
 }
@@ -581,11 +586,13 @@ module.exports = defineWidget({
     const [editingDueIdx, setEditingDueIdx] = useState(null);
     const [viewArchived, setViewArchived] = useState(false);
     const [archivedTasks, setArchivedTasks] = useState([]);
+    const [focusedIdx, setFocusedIdx] = useState(null);
 
     const tasksRef = useRef(tasks);
     const filterRef = useRef(filter);
     const searchRefState = useRef(searchQuery);
     const editingRef = useRef(editingIdx);
+    const focusedIdxRef = useRef(focusedIdx);
     useEffect(() => {
       tasksRef.current = tasks;
     }, [tasks]);
@@ -598,9 +605,14 @@ module.exports = defineWidget({
     useEffect(() => {
       editingRef.current = editingIdx;
     }, [editingIdx]);
+    useEffect(() => {
+      focusedIdxRef.current = focusedIdx;
+    }, [focusedIdx]);
     const editRef = useRef(null);
     const editDueRef = useRef(null);
     const searchRef = useRef(null);
+    const addInputRef = useRef(null);
+    const displayedRef = useRef([]);
     const notifiedDueToday = useRef(false);
 
     useEffect(() => {
@@ -626,11 +638,15 @@ module.exports = defineWidget({
         if (visible) loadTasks();
       });
       function onKeyDown(e) {
+        const tag = e.target.tagName;
+        const inInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
         if (e.ctrlKey && e.shiftKey && (e.key === 'T' || e.key === 't')) {
           e.preventDefault();
           setVisible((v) => !v);
           return;
         }
+
         if (
           e.key === "Escape" &&
           editingRef.current === null &&
@@ -641,6 +657,100 @@ module.exports = defineWidget({
             setSearchQuery("");
             searchRef.current?.focus();
           } else if (filterRef.current.length) setFilter([]);
+          return;
+        }
+
+        if (!inInput) {
+          const displayed = displayedRef.current;
+
+          if (e.key === "j" || e.key === "ArrowDown") {
+            e.preventDefault();
+            setFocusedIdx((prev) =>
+              prev === null || prev >= displayed.length - 1 ? 0 : prev + 1
+            );
+            return;
+          }
+
+          if (e.key === "k" || e.key === "ArrowUp") {
+            e.preventDefault();
+            setFocusedIdx((prev) =>
+              prev === null || prev <= 0 ? displayed.length - 1 : prev - 1
+            );
+            return;
+          }
+
+          if (e.key === "x" && focusedIdxRef.current !== null) {
+            const task = displayed[focusedIdxRef.current];
+            if (task) {
+              e.preventDefault();
+              const idx = tasksRef.current.indexOf(task);
+              if (idx !== -1) {
+                const wasCompleted = task.completed;
+                saveTasks((prev) => {
+                  const next = [...prev];
+                  next[idx] = todoTxtParser.toggleComplete(next[idx]);
+                  if (!wasCompleted && next[idx].keyValues.rec) {
+                    const recurring = todoTxtParser.processRecurrence(next[idx]);
+                    if (recurring) next.push(recurring);
+                  }
+                  return next;
+                });
+              }
+            }
+            return;
+          }
+
+          if (e.key === "e" && focusedIdxRef.current !== null) {
+            const task = displayed[focusedIdxRef.current];
+            if (task) {
+              e.preventDefault();
+              setEditingIdx(tasksRef.current.indexOf(task));
+            }
+            return;
+          }
+
+          if (e.key === "d" && focusedIdxRef.current !== null) {
+            const task = displayed[focusedIdxRef.current];
+            if (task) {
+              e.preventDefault();
+              const idx = tasksRef.current.indexOf(task);
+              if (idx !== -1) {
+                saveTasks((prev) => todoTxtParser.removeTask(prev, idx));
+                setFocusedIdx((prev) => Math.min(prev, displayed.length - 2));
+              }
+            }
+            return;
+          }
+
+          if (e.key === "a" && focusedIdxRef.current !== null) {
+            const task = displayed[focusedIdxRef.current];
+            if (task && task.completed) {
+              e.preventDefault();
+              const line = todoTxtParser.serialize([task]);
+              saveTasks((prev) => {
+                const idx = prev.indexOf(task);
+                if (idx === -1) return prev;
+                const next = [...prev];
+                next.splice(idx, 1);
+                return next;
+              });
+              todoStore.appendToArchive(line, todoTxtParser);
+              setFocusedIdx((prev) => Math.min(prev, displayed.length - 2));
+            }
+            return;
+          }
+        }
+
+        if (e.key === "n" && !inInput) {
+          e.preventDefault();
+          addInputRef.current?.focus();
+          return;
+        }
+
+        if (e.key === "/" && !inInput) {
+          e.preventDefault();
+          searchRef.current?.focus();
+          return;
         }
       }
       window.addEventListener("keydown", onKeyDown);
@@ -866,6 +976,7 @@ module.exports = defineWidget({
     }
 
     const displayed = sortDisplayed(tasks, sortKey, filter, searchQuery);
+    displayedRef.current = displayed;
     const hasFilter = filter.length > 0 || searchQuery !== "";
     const allContexts = todoTxtParser.uniqueContexts(tasks);
     const allProjects = todoTxtParser.uniqueProjects(tasks);
@@ -892,6 +1003,7 @@ module.exports = defineWidget({
 
           <div class="todotxt-add">
             <input
+              ref={addInputRef}
               type="text"
               placeholder="+ Add task…"
                onKeyDown={(e) => {
@@ -1027,8 +1139,9 @@ module.exports = defineWidget({
 
               return (
                 <div
-                  class={{ "todotxt-task": true, completed: task.completed }}
+                  class={{ "todotxt-task": true, completed: task.completed, focused: focusedIdx === i }}
                   key={realIdx}
+                  onClick={() => setFocusedIdx(i)}
                 >
                   <label class="tn-checkbox">
                     <input
@@ -1037,9 +1150,14 @@ module.exports = defineWidget({
                       onClick={() => {
                         const idx = findRealIdx(task);
                         if (idx === -1) return;
+                        const wasCompleted = task.completed;
                         saveTasks((prev) => {
                           const next = [...prev];
                           next[idx] = todoTxtParser.toggleComplete(next[idx]);
+                          if (!wasCompleted && next[idx].keyValues.rec) {
+                            const recurring = todoTxtParser.processRecurrence(next[idx]);
+                            if (recurring) next.push(recurring);
+                          }
                           return next;
                         });
                       }}
