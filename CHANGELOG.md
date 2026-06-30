@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0] — 2026-06-30
+
+### Added
+- CHANGELOG.md with full project history
+
+### Changed
+- Release zip now includes CHANGELOG.md
+- README synced with all features (due date picker, filters, sort, inline edit, search, toasts, multi-filter)
+
 ## [0.2.0] — 2026-06-30
 
 ### Added
