@@ -9,6 +9,9 @@
 - Release zip now includes CHANGELOG.md
 - README synced with all features (due date picker, filters, sort, inline edit, search, toasts, multi-filter)
 
+### Fixed
+- Release workflow: replaced `softprops/action-gh-release` with `gh release create` to fix 403 permission error
+
 ## [0.2.0] — 2026-06-30
 
 ### Added
